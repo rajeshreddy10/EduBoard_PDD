@@ -103,7 +103,17 @@ function SettingsContent() {
       dataSharing: false,
       twoFactor: false,
     });
-  }, [theme]);
+
+    if (user?.id) {
+      import('@/lib/services/firebaseData').then(({ userSettingsService }) => {
+        userSettingsService.getSettings(user.id).then((cloudSettings) => {
+          if (cloudSettings) {
+            setS(prev => ({ ...prev, ...cloudSettings }));
+          }
+        }).catch(console.warn);
+      });
+    }
+  }, [theme, user?.id]);
 
   const persist = (prev: typeof s, key: string, value: any) => {
     const next = { ...prev, [key]: value };
@@ -123,6 +133,9 @@ function SettingsContent() {
     });
     if (user?.id) {
       userProfileService.updateProfile(user.id, { appSettings: next } as any).catch(console.error);
+      import('@/lib/services/firebaseData').then(({ userSettingsService }) => {
+        userSettingsService.saveSettings(user.id, next).catch(console.error);
+      });
     }
     setSavedNotice(true);
     setTimeout(() => setSavedNotice(false), 2000);

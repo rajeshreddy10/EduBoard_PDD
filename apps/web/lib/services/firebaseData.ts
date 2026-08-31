@@ -585,3 +585,184 @@ export const supportService = {
   }
 };
 
+export const userSettingsService = {
+  async getSettings(userId: string): Promise<any | null> {
+    if (!userId) return null;
+    try {
+      const settingsRef = doc(db, 'users', userId, 'settings', 'preferences');
+      const snap = await getDoc(settingsRef);
+      if (snap.exists()) {
+        return snap.data();
+      }
+      return null;
+    } catch (error) {
+      console.warn('Error fetching user settings from Firestore:', error);
+      return null;
+    }
+  },
+
+  async saveSettings(userId: string, settingsData: any): Promise<void> {
+    if (!userId) return;
+    try {
+      const payload = sanitizePayload({
+        ...settingsData,
+        updatedAt: new Date().toISOString(),
+      });
+      const settingsRef = doc(db, 'users', userId, 'settings', 'preferences');
+      await setDoc(settingsRef, payload, { merge: true });
+    } catch (error) {
+      console.error('Error saving user settings to Firestore:', error);
+      throw error;
+    }
+  }
+};
+
+export const activityService = {
+  async getActivities(userId: string): Promise<any[]> {
+    if (!userId) return [];
+    try {
+      const actRef = collection(db, 'users', userId, 'activities');
+      const q = query(actRef, orderBy('timestamp', 'desc'));
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch (error) {
+      console.warn('Error fetching activities from Firestore:', error);
+      return [];
+    }
+  },
+
+  subscribeToActivities(userId: string, callback: (activities: any[]) => void): Unsubscribe | null {
+    if (!userId) return null;
+    try {
+      const actRef = collection(db, 'users', userId, 'activities');
+      const q = query(actRef, orderBy('timestamp', 'desc'));
+      return onSnapshot(q, (snapshot) => {
+        const items = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        callback(items);
+      }, (error) => {
+        console.warn('Activity subscription warning:', error);
+      });
+    } catch (error) {
+      console.error('Error setting up activity listener:', error);
+      return null;
+    }
+  },
+
+  async logActivity(userId: string, activity: { type: string; description: string; metadata?: any }): Promise<void> {
+    if (!userId) return;
+    try {
+      const actId = `act_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+      const payload = sanitizePayload({
+        id: actId,
+        userId,
+        type: activity.type,
+        description: activity.description,
+        metadata: activity.metadata || {},
+        timestamp: new Date().toISOString(),
+      });
+      await setDoc(doc(db, 'users', userId, 'activities', actId), payload);
+    } catch (error) {
+      console.error('Error logging activity to Firestore:', error);
+    }
+  }
+};
+
+export const aiDataService = {
+  async getAINotes(userId: string): Promise<any[]> {
+    if (!userId) return [];
+    try {
+      const notesRef = collection(db, 'users', userId, 'aiNotes');
+      const q = query(notesRef, orderBy('createdAt', 'desc'));
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch (error) {
+      console.warn('Error fetching AI notes from Firestore:', error);
+      return [];
+    }
+  },
+
+  async saveAINote(userId: string, note: { id?: string; title: string; content: string; type?: string; metadata?: any }): Promise<any> {
+    if (!userId) return null;
+    try {
+      const noteId = note.id || `ainote_${Date.now()}`;
+      const payload = sanitizePayload({
+        id: noteId,
+        userId,
+        title: note.title,
+        content: note.content,
+        type: note.type || 'summary',
+        metadata: note.metadata || {},
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+      await setDoc(doc(db, 'users', userId, 'aiNotes', noteId), payload, { merge: true });
+      return payload;
+    } catch (error) {
+      console.error('Error saving AI note to Firestore:', error);
+      throw error;
+    }
+  },
+
+  async deleteAINote(userId: string, noteId: string): Promise<void> {
+    if (!userId || !noteId) return;
+    try {
+      await deleteDoc(doc(db, 'users', userId, 'aiNotes', noteId));
+    } catch (error) {
+      console.error('Error deleting AI note:', error);
+    }
+  }
+};
+
+export const customMappingsService = {
+  async getGestureMappings(userId: string): Promise<any[]> {
+    if (!userId) return [];
+    try {
+      const ref = doc(db, 'users', userId, 'mappings', 'gestures');
+      const snap = await getDoc(ref);
+      if (snap.exists()) {
+        return snap.data().mappings || [];
+      }
+      return [];
+    } catch (error) {
+      console.warn('Error fetching gesture mappings from Firestore:', error);
+      return [];
+    }
+  },
+
+  async saveGestureMappings(userId: string, mappings: any[]): Promise<void> {
+    if (!userId) return;
+    try {
+      const ref = doc(db, 'users', userId, 'mappings', 'gestures');
+      await setDoc(ref, sanitizePayload({ mappings, updatedAt: new Date().toISOString() }), { merge: true });
+    } catch (error) {
+      console.error('Error saving gesture mappings to Firestore:', error);
+    }
+  },
+
+  async getVoiceCommands(userId: string): Promise<any[]> {
+    if (!userId) return [];
+    try {
+      const ref = doc(db, 'users', userId, 'mappings', 'voice');
+      const snap = await getDoc(ref);
+      if (snap.exists()) {
+        return snap.data().commands || [];
+      }
+      return [];
+    } catch (error) {
+      console.warn('Error fetching voice commands from Firestore:', error);
+      return [];
+    }
+  },
+
+  async saveVoiceCommands(userId: string, commands: any[]): Promise<void> {
+    if (!userId) return;
+    try {
+      const ref = doc(db, 'users', userId, 'mappings', 'voice');
+      await setDoc(ref, sanitizePayload({ commands, updatedAt: new Date().toISOString() }), { merge: true });
+    } catch (error) {
+      console.error('Error saving voice commands to Firestore:', error);
+    }
+  }
+};
+
+
