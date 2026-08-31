@@ -1,0 +1,13 @@
+{
+  "name": "eduboard-appium-tests",
+  "version": "1.0.0",
+  "description": "EduBoard Mobile Appium E2E Automation Testing Suite",
+  "main": "run_mobile_e2e.js",
+  "scripts": {
+    "test": "node run_mobile_e2e.js"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0",
+    "webdriverio": "^8.38.0"
+  }
+}

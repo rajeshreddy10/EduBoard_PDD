@@ -18,11 +18,17 @@
     "start": "concurrently \"npm run start:api\" \"npm run start:web\"",
     "install:all": "npm install --prefix apps/web && npm install --prefix apps/api",
     "lint": "npm run lint --prefix apps/web && npm run lint --prefix apps/api",
+    "test:load": "node scripts/run_load_test_suite.js",
+    "test:selenium": "node EduBoardE2E/run_web_e2e.js",
+    "test:appium": "node EduBoardAppium/run_mobile_e2e.js",
+    "test:all-reports": "npm run test:load && npm run test:selenium && npm run test:appium",
     "test": "npm run test --prefix apps/web && npm run test --prefix apps/api"
   },
   "devDependencies": {
     "concurrently": "^8.2.0",
-    "nodemon": "^3.0.0"
+    "exceljs": "^4.4.0",
+    "nodemon": "^3.0.0",
+    "selenium-webdriver": "^4.48.0"
   },
   "dependencies": {
     "flutter": "^0.0.5",
