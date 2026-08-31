@@ -1,0 +1,57 @@
+# Next.js Dependencies
+node_modules/
+.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# Testing & Coverage
+coverage/
+
+# Next.js Build Outputs
+.next/
+out/
+build/
+dist/
+.turbo/
+
+# Miscellaneous System Files
+.DS_Store
+*.pem
+*.log
+
+# Debug Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Environment Secret Files (NEVER commit secrets to git)
+.env
+.env*.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.production
+serviceAccountKey.json
+*.pem
+
+# Vercel & Deployment Artifacts
+.vercel
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Hidden Items (Capacitor & APK)
+*.apk
+**/apk/
+**/outputs/apk/
+capacitor.config.*
+.capacitor/
+**/capacitor/
+

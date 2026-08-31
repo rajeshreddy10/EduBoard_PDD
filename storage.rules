@@ -1,0 +1,22 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // 1. User Profile Avatars — Public read, owner-only write
+    match /users/{uid}/avatar {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == uid
+                   && request.resource.size < 5 * 1024 * 1024; // 5MB max
+    }
+
+    // 2. User Private Files & Documents
+    match /users/{uid}/files/{fileId} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // 3. Fallback for authenticated session files
+    match /{allPaths=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}

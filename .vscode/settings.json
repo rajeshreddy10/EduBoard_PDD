@@ -1,0 +1,11 @@
+{
+    "java.configuration.updateBuildConfiguration": "interactive",
+    "files.exclude": {
+        "**/*.apk": true,
+        "**/apk": true,
+        "**/Android_App": true,
+        "**/capacitor": true,
+        "**/capacitor.config.*": true,
+        "**/.capacitor": true
+    }
+}

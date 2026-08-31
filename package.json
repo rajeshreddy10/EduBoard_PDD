@@ -1,0 +1,32 @@
+{
+  "name": "eduboard-monorepo",
+  "version": "3.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "description": "EduBoard PDD — Web-Only Monorepo (Frontend + Backend)",
+  "scripts": {
+    "dev:web": "npm run dev --prefix apps/web",
+    "dev:api": "npm run dev --prefix apps/api",
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\"",
+    "build:web": "npm run build --prefix apps/web",
+    "build:api": "npm run build --prefix apps/api",
+    "build": "npm run build:web",
+    "start:web": "npm run start --prefix apps/web",
+    "start:api": "npm run start --prefix apps/api",
+    "start": "concurrently \"npm run start:api\" \"npm run start:web\"",
+    "install:all": "npm install --prefix apps/web && npm install --prefix apps/api",
+    "lint": "npm run lint --prefix apps/web && npm run lint --prefix apps/api",
+    "test": "npm run test --prefix apps/web && npm run test --prefix apps/api"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0",
+    "nodemon": "^3.0.0"
+  },
+  "dependencies": {
+    "flutter": "^0.0.5",
+    "openai": "^6.48.0",
+    "redis": "^6.2.1"
+  }
+}

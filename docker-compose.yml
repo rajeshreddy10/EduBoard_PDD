@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  antigravity-api:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/api.Dockerfile
+    container_name: antigravity-api
+    restart: always
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      OPENCODE_SANDBOX_ENABLED: "true"
+
+  antigravity-web:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/web.Dockerfile
+    container_name: antigravity-web
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+      NEXT_PUBLIC_OPENCODE_ENABLED: "true"
+    depends_on:
+      - antigravity-api
