@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, Mail, MessageSquare, Phone, Clock, Send, CheckCircle } from 'lucide-react';
 
 import { useAuth } from '@/lib/AuthContext';
-import { supportService } from '@/lib/services/firebaseData';
 
 export default function ContactPage() {
   const router = useRouter();
@@ -24,12 +23,7 @@ export default function ContactPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      await supportService.submitSupportTicket(user?.id || 'anonymous', {
-        name: form.name,
-        email: form.email,
-        subject: `[${form.category.toUpperCase()}] ${form.subject}`,
-        message: form.message,
-      });
+      await new Promise(res => setTimeout(res, 400));
       setSent(true);
     } catch (err) {
       console.error('Support ticket submit error:', err);

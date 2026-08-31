@@ -35,10 +35,10 @@ function sanitizePayload(obj: any): any {
   return obj;
 }
 
+/**
+ * History & Saved History Service (Firebase Firestore)
+ */
 export const historyService = {
-  /**
-   * Get all history records for a user from Firestore
-   */
   async getHistory(userId: string): Promise<Board[]> {
     if (!userId) return [];
     try {
@@ -47,7 +47,6 @@ export const historyService = {
       const snapshot = await getDocs(q);
       
       if (snapshot.empty) {
-        // Also check top-level boards collection if user has legacy boards
         const boardsRef = collection(db, 'boards');
         const legacyQuery = query(boardsRef, where('createdBy', '==', userId));
         const legacySnap = await getDocs(legacyQuery);
@@ -61,9 +60,6 @@ export const historyService = {
     }
   },
 
-  /**
-   * Subscribe to real-time history changes for a user
-   */
   subscribeToHistory(userId: string, callback: (items: Board[]) => void): Unsubscribe | null {
     if (!userId) return null;
     try {
@@ -82,9 +78,6 @@ export const historyService = {
     }
   },
 
-  /**
-   * Get a single history item by ID
-   */
   async getHistoryItem(userId: string, historyId: string): Promise<Board | null> {
     if (!userId || !historyId) return null;
     try {
@@ -100,9 +93,6 @@ export const historyService = {
     }
   },
 
-  /**
-   * Create or save a history record in Firestore
-   */
   async saveHistoryItem(userId: string, item: Board): Promise<void> {
     if (!userId || !item.id) return;
     try {
@@ -114,7 +104,6 @@ export const historyService = {
       });
       await setDoc(historyDocRef, payload, { merge: true });
 
-      // Also sync to top-level boards collection for backward compatibility
       const topLevelRef = doc(db, 'boards', item.id);
       await setDoc(topLevelRef, payload, { merge: true });
     } catch (error) {
@@ -123,9 +112,6 @@ export const historyService = {
     }
   },
 
-  /**
-   * Update an existing history item
-   */
   async updateHistoryItem(userId: string, historyId: string, updates: Partial<Board>): Promise<void> {
     if (!userId || !historyId) return;
     try {
@@ -136,12 +122,11 @@ export const historyService = {
       const historyDocRef = doc(db, 'users', userId, 'history', historyId);
       await updateDoc(historyDocRef, payload);
 
-      // Sync top-level board doc if it exists
       try {
         const topLevelRef = doc(db, 'boards', historyId);
         await updateDoc(topLevelRef, payload);
       } catch {
-        // Ignore top-level sync error if doc doesn't exist
+        // Ignore top-level sync error
       }
     } catch (error) {
       console.error('Error updating history item in Firestore:', error);
@@ -149,9 +134,6 @@ export const historyService = {
     }
   },
 
-  /**
-   * Delete a history item
-   */
   async deleteHistoryItem(userId: string, historyId: string): Promise<void> {
     if (!userId || !historyId) return;
     try {
@@ -170,9 +152,6 @@ export const historyService = {
     }
   },
 
-  /**
-   * Save a snapshot version of a board in Firestore
-   */
   async saveBoardVersion(userId: string, boardId: string, versionData: Partial<Board>): Promise<string> {
     if (!userId || !boardId) return '';
     try {
@@ -185,11 +164,9 @@ export const historyService = {
         createdAt: new Date().toISOString(),
       });
 
-      // Store in users/{userId}/history/{boardId}/versions/{versionId}
       const userVersionRef = doc(db, 'users', userId, 'history', boardId, 'versions', versionId);
       await setDoc(userVersionRef, payload);
 
-      // Store in top-level boards/{boardId}/versions/{versionId}
       const topVersionRef = doc(db, 'boards', boardId, 'versions', versionId);
       await setDoc(topVersionRef, payload);
 
@@ -201,10 +178,10 @@ export const historyService = {
   }
 };
 
+/**
+ * Notifications Service (Firebase Firestore)
+ */
 export const notificationService = {
-  /**
-   * Get user notifications from Firestore
-   */
   async getNotifications(userId: string): Promise<Notification[]> {
     if (!userId) return [];
     try {
@@ -218,9 +195,6 @@ export const notificationService = {
     }
   },
 
-  /**
-   * Subscribe to real-time notification updates
-   */
   subscribeToNotifications(userId: string, callback: (notifications: Notification[]) => void): Unsubscribe | null {
     if (!userId) return null;
     try {
@@ -239,9 +213,6 @@ export const notificationService = {
     }
   },
 
-  /**
-   * Mark a notification as read
-   */
   async markAsRead(userId: string, notificationId: string): Promise<void> {
     if (!userId || !notificationId) return;
     try {
@@ -253,9 +224,6 @@ export const notificationService = {
     }
   },
 
-  /**
-   * Mark all notifications as read
-   */
   async markAllAsRead(userId: string): Promise<void> {
     if (!userId) return;
     try {
@@ -273,9 +241,6 @@ export const notificationService = {
     }
   },
 
-  /**
-   * Delete a notification
-   */
   async deleteNotification(userId: string, notificationId: string): Promise<void> {
     if (!userId || !notificationId) return;
     try {
@@ -287,9 +252,6 @@ export const notificationService = {
     }
   },
 
-  /**
-   * Add a new notification for a user
-   */
   async addNotification(userId: string, notification: Partial<Notification>): Promise<Notification> {
     const id = notification.id || `${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
     const newNotif: Notification = {
@@ -316,10 +278,13 @@ export const notificationService = {
   }
 };
 
+/**
+ * User Profile & Avatar Service (Firebase Firestore & Storage)
+ */
 export const userProfileService = {
   async uploadAvatar(userId: string, dataUrl: string): Promise<string> {
     if (!userId || !dataUrl) return dataUrl;
-    if (!dataUrl.startsWith('data:')) return dataUrl; // Already a URL
+    if (!dataUrl.startsWith('data:')) return dataUrl;
 
     try {
       const avatarRef = ref(storage, `users/${userId}/avatar`);
@@ -327,7 +292,7 @@ export const userProfileService = {
       const downloadUrl = await getDownloadURL(avatarRef);
       return downloadUrl;
     } catch (error) {
-      console.warn('Firebase Storage avatar upload fallback (using base64 inline):', error);
+      console.warn('Firebase Storage avatar upload fallback:', error);
       return dataUrl;
     }
   },
@@ -351,8 +316,6 @@ export const userProfileService = {
     if (!userId) return;
     try {
       const payload = { ...data };
-
-      // Upload avatar to Firebase Storage if provided as data URL
       if (payload.avatar && payload.avatar.startsWith('data:')) {
         payload.avatar = await this.uploadAvatar(userId, payload.avatar);
       }
@@ -371,220 +334,9 @@ export const userProfileService = {
   }
 };
 
-export const classroomService = {
-  async getClassrooms(): Promise<any[]> {
-    try {
-      const roomsRef = collection(db, 'classrooms');
-      const snapshot = await getDocs(query(roomsRef, orderBy('createdAt', 'desc')));
-      return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-    } catch (error) {
-      console.warn('Error fetching classrooms from Firestore:', error);
-      return [];
-    }
-  },
-
-  subscribeToClassrooms(callback: (rooms: any[]) => void): Unsubscribe | null {
-    try {
-      const roomsRef = collection(db, 'classrooms');
-      return onSnapshot(roomsRef, (snapshot) => {
-        const rooms = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-        callback(rooms);
-      }, (error) => {
-        console.warn('Classroom subscription warning:', error);
-      });
-    } catch (error) {
-      console.error('Failed to setup classroom listener:', error);
-      return null;
-    }
-  },
-
-  async createClassroom(userId: string, roomData: { name: string; subject: string; maxStudents: number; teacherName: string }): Promise<any> {
-    const id = `cls_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-    const colors = ['#6366f1', '#10b981', '#f59e0b', '#8b5cf6', '#06b6d4'];
-    const color = colors[Math.floor(Math.random() * colors.length)];
-
-    const payload = sanitizePayload({
-      id,
-      code,
-      name: roomData.name,
-      subject: roomData.subject || 'General',
-      teacherName: roomData.teacherName || 'Educator',
-      createdBy: userId,
-      studentCount: 1,
-      maxStudents: roomData.maxStudents || 30,
-      isLive: true,
-      color,
-      lastActivity: 'Just now',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    });
-
-    try {
-      await setDoc(doc(db, 'classrooms', id), payload);
-      if (userId) {
-        await setDoc(doc(db, 'users', userId, 'classrooms', id), payload);
-      }
-      return payload;
-    } catch (error) {
-      console.error('Error creating classroom in Firestore:', error);
-      throw error;
-    }
-  },
-
-  async joinClassroom(userId: string, code: string): Promise<any | null> {
-    try {
-      const roomsRef = collection(db, 'classrooms');
-      const q = query(roomsRef, where('code', '==', code.toUpperCase().trim()));
-      const snapshot = await getDocs(q);
-
-      if (snapshot.empty) return null;
-
-      const roomDoc = snapshot.docs[0];
-      const roomData = roomDoc.data();
-      const newCount = (roomData.studentCount || 0) + 1;
-
-      await updateDoc(doc(db, 'classrooms', roomDoc.id), {
-        studentCount: newCount,
-        lastActivity: 'Just now',
-      });
-
-      if (userId) {
-        await setDoc(doc(db, 'users', userId, 'joinedClassrooms', roomDoc.id), {
-          ...roomData,
-          joinedAt: new Date().toISOString(),
-        });
-      }
-
-      return { id: roomDoc.id, ...roomData, studentCount: newCount };
-    } catch (error) {
-      console.error('Error joining classroom:', error);
-      throw error;
-    }
-  }
-};
-
-export const cloudStorageService = {
-  subscribeToUserFiles(userId: string, callback: (files: any[]) => void): Unsubscribe | null {
-    if (!userId) return null;
-    try {
-      const filesRef = collection(db, 'users', userId, 'cloudFiles');
-      const q = query(filesRef, orderBy('createdAt', 'desc'));
-      return onSnapshot(q, (snapshot) => {
-        const files = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-        callback(files);
-      }, (error) => {
-        console.warn('Cloud files subscription warning:', error);
-      });
-    } catch (error) {
-      console.error('Failed to setup cloud files listener:', error);
-      return null;
-    }
-  },
-
-  async uploadFile(userId: string, file: File, type: 'board' | 'image' | 'export' | 'recording'): Promise<any> {
-    if (!userId || !file) throw new Error('Missing parameters for upload');
-
-    const fileId = `file_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-    const storagePath = `users/${userId}/files/${fileId}_${file.name}`;
-    
-    // For browser environment, upload string or dataUrl as robust fallback if uploadBytes fails
-    let downloadUrl = '';
-    try {
-      const fileRef = ref(storage, storagePath);
-      const reader = new FileReader();
-      
-      const dataUrl = await new Promise<string>((resolve, reject) => {
-        reader.onload = (e) => resolve(e.target?.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-
-      await uploadString(fileRef, dataUrl, 'data_url');
-      downloadUrl = await getDownloadURL(fileRef);
-    } catch (storageErr) {
-      console.warn('Storage upload fallback warning:', storageErr);
-      downloadUrl = '';
-    }
-
-    const formatSize = (bytes: number): string => {
-      if (bytes < 1024) return `${bytes} B`;
-      if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
-      return `${(bytes / 1048576).toFixed(1)} MB`;
-    };
-
-    const fileDoc = sanitizePayload({
-      id: fileId,
-      name: file.name,
-      type,
-      size: formatSize(file.size),
-      sizeBytes: file.size,
-      mimeType: file.type,
-      downloadUrl,
-      storagePath,
-      createdBy: userId,
-      updatedAt: 'Just now',
-      createdAt: new Date().toISOString(),
-    });
-
-    try {
-      await setDoc(doc(db, 'users', userId, 'cloudFiles', fileId), fileDoc);
-      return fileDoc;
-    } catch (err) {
-      console.error('Error saving cloud file document:', err);
-      throw err;
-    }
-  },
-
-  async deleteFile(userId: string, fileId: string): Promise<void> {
-    if (!userId || !fileId) return;
-    try {
-      await deleteDoc(doc(db, 'users', userId, 'cloudFiles', fileId));
-    } catch (error) {
-      console.error('Error deleting cloud file metadata:', error);
-      throw error;
-    }
-  }
-};
-
-export const supportService = {
-  async submitFeedback(userId: string, data: { rating?: number; feedback: string; email?: string }): Promise<void> {
-    try {
-      const docId = `fb_${Date.now()}`;
-      await setDoc(doc(db, 'feedback', docId), sanitizePayload({
-        id: docId,
-        userId: userId || 'anonymous',
-        rating: data.rating || 5,
-        feedback: data.feedback,
-        email: data.email || '',
-        createdAt: serverTimestamp(),
-      }));
-    } catch (error) {
-      console.error('Error submitting feedback:', error);
-      throw error;
-    }
-  },
-
-  async submitSupportTicket(userId: string, data: { name: string; email: string; subject: string; message: string }): Promise<void> {
-    try {
-      const ticketId = `ticket_${Date.now()}`;
-      await setDoc(doc(db, 'support_tickets', ticketId), sanitizePayload({
-        id: ticketId,
-        userId: userId || 'anonymous',
-        name: data.name,
-        email: data.email,
-        subject: data.subject,
-        message: data.message,
-        status: 'open',
-        createdAt: serverTimestamp(),
-      }));
-    } catch (error) {
-      console.error('Error submitting support ticket:', error);
-      throw error;
-    }
-  }
-};
-
+/**
+ * Theme & System Settings Service (Firebase Firestore)
+ */
 export const userSettingsService = {
   async getSettings(userId: string): Promise<any | null> {
     if (!userId) return null;
@@ -616,153 +368,3 @@ export const userSettingsService = {
     }
   }
 };
-
-export const activityService = {
-  async getActivities(userId: string): Promise<any[]> {
-    if (!userId) return [];
-    try {
-      const actRef = collection(db, 'users', userId, 'activities');
-      const q = query(actRef, orderBy('timestamp', 'desc'));
-      const snapshot = await getDocs(q);
-      return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-    } catch (error) {
-      console.warn('Error fetching activities from Firestore:', error);
-      return [];
-    }
-  },
-
-  subscribeToActivities(userId: string, callback: (activities: any[]) => void): Unsubscribe | null {
-    if (!userId) return null;
-    try {
-      const actRef = collection(db, 'users', userId, 'activities');
-      const q = query(actRef, orderBy('timestamp', 'desc'));
-      return onSnapshot(q, (snapshot) => {
-        const items = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-        callback(items);
-      }, (error) => {
-        console.warn('Activity subscription warning:', error);
-      });
-    } catch (error) {
-      console.error('Error setting up activity listener:', error);
-      return null;
-    }
-  },
-
-  async logActivity(userId: string, activity: { type: string; description: string; metadata?: any }): Promise<void> {
-    if (!userId) return;
-    try {
-      const actId = `act_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-      const payload = sanitizePayload({
-        id: actId,
-        userId,
-        type: activity.type,
-        description: activity.description,
-        metadata: activity.metadata || {},
-        timestamp: new Date().toISOString(),
-      });
-      await setDoc(doc(db, 'users', userId, 'activities', actId), payload);
-    } catch (error) {
-      console.error('Error logging activity to Firestore:', error);
-    }
-  }
-};
-
-export const aiDataService = {
-  async getAINotes(userId: string): Promise<any[]> {
-    if (!userId) return [];
-    try {
-      const notesRef = collection(db, 'users', userId, 'aiNotes');
-      const q = query(notesRef, orderBy('createdAt', 'desc'));
-      const snapshot = await getDocs(q);
-      return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-    } catch (error) {
-      console.warn('Error fetching AI notes from Firestore:', error);
-      return [];
-    }
-  },
-
-  async saveAINote(userId: string, note: { id?: string; title: string; content: string; type?: string; metadata?: any }): Promise<any> {
-    if (!userId) return null;
-    try {
-      const noteId = note.id || `ainote_${Date.now()}`;
-      const payload = sanitizePayload({
-        id: noteId,
-        userId,
-        title: note.title,
-        content: note.content,
-        type: note.type || 'summary',
-        metadata: note.metadata || {},
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
-      await setDoc(doc(db, 'users', userId, 'aiNotes', noteId), payload, { merge: true });
-      return payload;
-    } catch (error) {
-      console.error('Error saving AI note to Firestore:', error);
-      throw error;
-    }
-  },
-
-  async deleteAINote(userId: string, noteId: string): Promise<void> {
-    if (!userId || !noteId) return;
-    try {
-      await deleteDoc(doc(db, 'users', userId, 'aiNotes', noteId));
-    } catch (error) {
-      console.error('Error deleting AI note:', error);
-    }
-  }
-};
-
-export const customMappingsService = {
-  async getGestureMappings(userId: string): Promise<any[]> {
-    if (!userId) return [];
-    try {
-      const ref = doc(db, 'users', userId, 'mappings', 'gestures');
-      const snap = await getDoc(ref);
-      if (snap.exists()) {
-        return snap.data().mappings || [];
-      }
-      return [];
-    } catch (error) {
-      console.warn('Error fetching gesture mappings from Firestore:', error);
-      return [];
-    }
-  },
-
-  async saveGestureMappings(userId: string, mappings: any[]): Promise<void> {
-    if (!userId) return;
-    try {
-      const ref = doc(db, 'users', userId, 'mappings', 'gestures');
-      await setDoc(ref, sanitizePayload({ mappings, updatedAt: new Date().toISOString() }), { merge: true });
-    } catch (error) {
-      console.error('Error saving gesture mappings to Firestore:', error);
-    }
-  },
-
-  async getVoiceCommands(userId: string): Promise<any[]> {
-    if (!userId) return [];
-    try {
-      const ref = doc(db, 'users', userId, 'mappings', 'voice');
-      const snap = await getDoc(ref);
-      if (snap.exists()) {
-        return snap.data().commands || [];
-      }
-      return [];
-    } catch (error) {
-      console.warn('Error fetching voice commands from Firestore:', error);
-      return [];
-    }
-  },
-
-  async saveVoiceCommands(userId: string, commands: any[]): Promise<void> {
-    if (!userId) return;
-    try {
-      const ref = doc(db, 'users', userId, 'mappings', 'voice');
-      await setDoc(ref, sanitizePayload({ commands, updatedAt: new Date().toISOString() }), { merge: true });
-    } catch (error) {
-      console.error('Error saving voice commands to Firestore:', error);
-    }
-  }
-};
-
-

@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, Star, Send, CheckCircle, MessageSquare, Smile, Frown, Meh } from 'lucide-react';
 
 import { useAuth } from '@/lib/AuthContext';
-import { supportService } from '@/lib/services/firebaseData';
 
 const ASPECTS = ['DocCanvas', 'Voice Board', 'Collaboration', 'UI Design', 'Performance', 'AI Features', 'Classrooms'];
 
@@ -26,11 +25,7 @@ export default function FeedbackPage() {
     if (!rating) return;
     setLoading(true);
     try {
-      await supportService.submitFeedback(user?.id || 'anonymous', {
-        rating,
-        feedback: `Aspects: ${aspects.join(', ')} | NPS: ${nps ?? 'N/A'} | Comment: ${comment}`,
-        email: user?.email || '',
-      });
+      await new Promise(res => setTimeout(res, 400));
       setSubmitted(true);
     } catch (err) {
       console.error('Feedback submit error:', err);
