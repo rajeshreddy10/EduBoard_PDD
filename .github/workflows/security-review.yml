@@ -1,0 +1,26 @@
+name: Security Review & SAST Scan Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  security-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      - run: npm ci || npm install
+      - name: Run SAST & Security Suite (300 Checks)
+        run: node scripts/run_security_suite.js
+      - name: Upload Security Reports Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Security-Review-Reports
+          path: |
+            Vulnerability Test Results/
