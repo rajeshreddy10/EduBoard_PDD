@@ -1,8 +1,8 @@
-name: Deploy EduBoard Web to GitHub Pages
+name: Enterprise CI/CD Pipeline
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, master ]
   workflow_dispatch:
 
 permissions:
@@ -15,7 +15,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  build-test-and-deploy:
+    name: Enterprise CI/CD Pipeline
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -30,8 +31,17 @@ jobs:
           node-version: 20
           cache: 'npm'
 
-      - name: Install Dependencies
+      - name: Install Monorepo Dependencies
         run: npm run install:all
+
+      - name: Run Global Code Quality & Linting
+        run: npm run lint
+
+      - name: Execute Automated Unit & Integration Tests
+        run: npm test
+
+      - name: Run Security SAST/DAST Audit (300 Checks)
+        run: node scripts/run_security_suite.js
 
       - name: Build Web Application for Static Export
         run: npm run build:web
@@ -44,6 +54,6 @@ jobs:
         with:
           path: './apps/web/out'
 
-      - name: Deploy to GitHub Pages
+      - name: Deploy Web Application to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
