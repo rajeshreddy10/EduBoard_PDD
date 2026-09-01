@@ -27,9 +27,9 @@ class MainActivity : AppCompatActivity() {
     private var pendingPermissionRequest: PermissionRequest? = null
     private var fileUploadCallback: ValueCallback<Array<Uri>>? = null
 
-    // Default host URL for ADB USB cable reverse (http://localhost:3000) & Wi-Fi IP fallback
-    private var currentHostUrl = "http://localhost:3000"
-    private var wifiFallbackUrl = "http://10.101.120.243:3000"
+    // Default host URL for local Wi-Fi network (http://10.101.120.243:3000) & ADB reverse / localhost fallback (http://localhost:3000)
+    private var currentHostUrl = "http://10.101.120.243:3000"
+    private var wifiFallbackUrl = "http://localhost:3000"
     private var isFallbackAttempted = false
 
     private val filePickerLauncher = registerForActivityResult(

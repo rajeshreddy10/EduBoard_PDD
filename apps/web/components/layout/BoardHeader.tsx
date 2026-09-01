@@ -98,9 +98,9 @@ export function BoardHeader({
             onClick={handleMenuClick}
             aria-label="Open Navigation Menu"
             title="Open Navigation Menu"
-            className="flex items-center gap-2 px-3 py-2 justify-center bg-[var(--bg-tertiary)] hover:bg-[var(--bg-hover)] border border-[var(--border-primary)] text-[var(--text-primary)] font-semibold text-xs rounded-xl transition-all cursor-pointer shrink-0"
+            className="flex items-center gap-1.5 px-2.5 py-1 justify-center bg-[var(--bg-tertiary)] hover:bg-[var(--bg-hover)] border border-[var(--border-primary)] text-[var(--text-primary)] font-medium text-[11px] rounded-lg transition-all cursor-pointer shrink-0"
           >
-            <PanelLeftOpen className="w-4 h-4 text-[var(--color-primary-500)]" />
+            <PanelLeftOpen className="w-3.5 h-3.5 text-[var(--color-primary-500)]" />
             <span className="hidden sm:inline">Menu</span>
           </button>
 
@@ -108,15 +108,15 @@ export function BoardHeader({
             onClick={() => (onBack ? onBack() : router.back())}
             aria-label="Go Back"
             title="Go Back"
-            className="flex items-center gap-1.5 p-2 justify-center hover:bg-[var(--bg-tertiary)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] rounded-xl transition-colors cursor-pointer shrink-0"
+            className="flex items-center gap-1 p-1.5 justify-center hover:bg-[var(--bg-tertiary)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] rounded-lg transition-colors cursor-pointer shrink-0"
           >
-            <ArrowLeft className="w-4 h-4" />
-            <span className="hidden lg:inline text-xs font-semibold">Back</span>
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span className="hidden lg:inline text-[11px] font-medium">Back</span>
           </button>
           
           <div className="flex flex-col">
             <h1 className="text-xs sm:text-sm font-bold text-[var(--text-primary)] flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-[var(--color-primary-500)] shrink-0" />
+              <Sparkles className="w-3.5 h-3.5 text-[var(--color-primary-500)] shrink-0" />
               <span className="truncate max-w-[150px] sm:max-w-[280px]">{title}</span>
             </h1>
             <div className="flex items-center gap-3">
@@ -135,18 +135,18 @@ export function BoardHeader({
 
         {/* Center: Custom Toolbar or Status (Optional) */}
         {children && (
-          <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto scrollbar-none py-1">
+          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-none py-1">
             {children}
           </div>
         )}
 
         {/* Right: Save Button & AI Button */}
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           {onSave && (
             <button
               onClick={onSave}
               disabled={saveStatus === 'saving'}
-              className={`flex items-center gap-2 text-xs font-semibold px-3.5 py-2 rounded-xl transition-all cursor-pointer border shrink-0 ${
+              className={`flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-lg transition-all cursor-pointer border shrink-0 ${
                 saveStatus === 'saved'
                   ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/20'
                   : saveStatus === 'error'
@@ -164,14 +164,14 @@ export function BoardHeader({
             <button
               onClick={onAiAction}
               disabled={isAiProcessing}
-              className="flex items-center gap-2 bg-[var(--bg-tertiary)] hover:bg-[var(--bg-hover)] text-[var(--text-primary)] border border-[var(--border-primary)] text-xs font-semibold px-3.5 py-2 rounded-xl transition-all cursor-pointer disabled:opacity-50 shrink-0"
+              className="flex items-center gap-1.5 bg-[var(--bg-tertiary)] hover:bg-[var(--bg-hover)] text-[var(--text-primary)] border border-[var(--border-primary)] text-[11px] font-medium px-2.5 py-1 rounded-lg transition-all cursor-pointer disabled:opacity-50 shrink-0"
             >
               {isAiProcessing ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-[var(--color-primary-500)]" />
+                <Loader2 className="w-3 h-3 animate-spin text-[var(--color-primary-500)]" />
               ) : aiActionIcon ? (
                 aiActionIcon
               ) : (
-                <Brain className="w-3.5 h-3.5 text-[var(--color-primary-500)]" />
+                <Brain className="w-3 h-3 text-[var(--color-primary-500)]" />
               )}
               <span>{isAiProcessing ? 'Thinking...' : aiActionLabel}</span>
             </button>

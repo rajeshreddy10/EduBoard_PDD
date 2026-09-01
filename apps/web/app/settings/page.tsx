@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft, BellRing, Palette, Globe, Shield, User,
-  Moon, Sun, CheckCircle, Clock, MapPin, Lock, LogOut
+  Moon, Sun, CheckCircle, Clock, MapPin, Lock, LogOut, Cloud
 } from 'lucide-react';
 import { useTheme } from '@/lib/ThemeContext';
 import { type ThemeId } from '@/lib/theme';
@@ -323,6 +323,27 @@ function SettingsContent() {
         </Row>
       </Section>
 
+      {/* 5. Firebase & Cloud Integration */}
+      <Section title="Firebase & Cloud Sync" icon={Cloud}>
+        <Row label="Firebase Auth & Menu Cloud Sync" desc="Synchronize user profile, system settings, saved history, and notifications via Firebase">
+          <Toggle value={(s as any).firebaseSync ?? true} onChange={() => toggle('firebaseSync' as any)} />
+        </Row>
+        <div className="p-3.5 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-primary)] flex items-center justify-between text-xs font-semibold">
+          <div className="space-y-0.5">
+            <p className="text-[var(--text-primary)] font-bold">Firebase Auth State</p>
+            <p className="text-[11px] text-[var(--text-tertiary)] font-mono">
+              {user ? `User: ${user.email || user.name || user.id}` : 'Guest / Unauthenticated'}
+            </p>
+          </div>
+          <span className={`px-2.5 py-1 rounded-lg text-[10px] uppercase tracking-wider font-bold ${
+            user ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+          }`}>
+            {user ? 'Authenticated' : 'Offline Mode'}
+          </span>
+        </div>
+      </Section>
+
     </div>
   );
 }
+

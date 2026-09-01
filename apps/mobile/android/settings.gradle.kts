@@ -13,5 +13,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "EduBoardMobileWebWrapper"
+rootProject.name = "EduBoardMobile"
 include(":app")

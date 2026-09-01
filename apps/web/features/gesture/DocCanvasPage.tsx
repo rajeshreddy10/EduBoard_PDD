@@ -13,8 +13,6 @@ import { DocumentViewer } from '@/components/board/DocumentViewer';
 import { VanishingLaserOverlay } from '@/components/board/VanishingLaserOverlay';
 import { FocusMagnifierOverlay } from '@/components/board/FocusMagnifierOverlay';
 import { ReferenceDrawer } from '@/components/board/ReferenceDrawer';
-import { WaypointBar, Waypoint } from '@/components/board/WaypointBar';
-import { TeacherNotesOverlay, TeacherNote } from '@/components/board/TeacherNotesOverlay';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { LASER_COLOR_MAP, LaserColorMode } from '@/components/board/PresentationPointerOverlay';
 
@@ -66,8 +64,9 @@ function DocCanvasContent() {
   const searchParams = useSearchParams();
   const queryId = searchParams?.get('id');
   const { user } = useAuth();
-  const { saveBoard, boards } = useBoard();
+  const { saveBoard, boards, setCurrentBoard } = useBoard();
   const [boardId, setBoardId] = useState<string>(() => queryId || `doccanvas_${Date.now()}`);
+  const [boardTitle, setBoardTitle] = useState<string>('DocCanvas Annotator');
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   // Document & View State
@@ -86,9 +85,6 @@ function DocCanvasContent() {
   // Core Features State
   const [isReferenceDrawerOpen, setIsReferenceDrawerOpen] = useState(false);
   const [referenceDocument, setReferenceDocument] = useState<ImportedFileData | null>(null);
-  const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
-  const [teacherNotes, setTeacherNotes] = useState<TeacherNote[]>([]);
-  const [isNotesVisible, setIsNotesVisible] = useState(false);
 
   // Overlays State
   const [laserColorMode, setLaserColorMode] = useState<LaserColorMode>('red');
@@ -122,32 +118,50 @@ function DocCanvasContent() {
     const targetId = queryId;
     let isMounted = true;
     async function loadSavedDocCanvasBoard() {
+      console.log('[History Resume: DocCanvas] Loading saved session:', targetId);
       let b = boards.find(item => item.id === targetId) || store.getBoard(targetId);
       if (!b && user?.id) {
         b = (await historyService.getHistoryItem(user.id, targetId)) || undefined;
       }
       if (b && isMounted) {
         setBoardId(b.id);
-        if (b.strokes && Array.isArray(b.strokes)) {
-          setStrokes(b.strokes as any);
+        if (b.title) setBoardTitle(b.title);
+        setCurrentBoard(b);
+
+        let loadedStrokes: Stroke[] = [];
+        if (b.strokes && Array.isArray(b.strokes) && b.strokes.length > 0) {
+          loadedStrokes = b.strokes as any;
+        } else if (b.content && typeof b.content === 'string' && b.content.trim().length > 0) {
+          try {
+            const parsed = JSON.parse(b.content);
+            if (Array.isArray(parsed)) loadedStrokes = parsed;
+            else if (parsed && Array.isArray(parsed.strokes)) loadedStrokes = parsed.strokes;
+          } catch {}
         }
-        if (b.elements && Array.isArray(b.elements)) {
-          setTextElements(b.elements as any);
+        if (loadedStrokes.length === 0) {
+          const local = store.getDrawings(targetId);
+          if (local && local.length > 0) loadedStrokes = local as any;
         }
-        if ((b as any).activeDocument) {
-          setDoc((b as any).activeDocument);
+
+        let loadedElements: BoardTextElement[] = [];
+        if (b.elements && Array.isArray(b.elements) && b.elements.length > 0) {
+          loadedElements = b.elements as any;
+        } else if (b.content && typeof b.content === 'string') {
+          try {
+            const parsed = JSON.parse(b.content);
+            if (parsed && Array.isArray(parsed.elements)) loadedElements = parsed.elements;
+          } catch {}
         }
-        if ((b as any).waypoints && Array.isArray((b as any).waypoints)) {
-          setWaypoints((b as any).waypoints);
-        }
-        if ((b as any).teacherNotes && Array.isArray((b as any).teacherNotes)) {
-          setTeacherNotes((b as any).teacherNotes);
-        }
+
+        setStrokes(loadedStrokes);
+        setTextElements(loadedElements);
+        if ((b as any).activeDocument) setDoc((b as any).activeDocument);
+        console.log(`[History Resume: DocCanvas] Loaded "${b.title}" with ${loadedStrokes.length} strokes.`);
       }
     }
     loadSavedDocCanvasBoard();
     return () => { isMounted = false; };
-  }, [queryId, boards, user?.id]);
+  }, [queryId, user?.id]);
 
   const showStatus = useCallback((message: string, duration = 2500) => {
     if (!isMountedRef.current) return;
@@ -187,6 +201,7 @@ function DocCanvasContent() {
     try {
       const imported = await fileImportService.importFile(file);
       setDoc(imported);
+      setDocMode('write');
       showStatus(`Opened document: ${imported.name}`);
     } catch (err) {
       console.error('File import failed:', err);
@@ -234,6 +249,34 @@ function DocCanvasContent() {
       setTimeout(() => setSaveStatus('idle'), 4000);
     }
   };
+
+  // Auto-save DocCanvas session state so annotations, text, and opened files update in History automatically
+  useEffect(() => {
+    if (strokes.length === 0 && textElements.length === 0 && !doc) return;
+    const timer = setTimeout(() => {
+      const boardPayload: Board = {
+        id: boardId,
+        title: doc ? `DocCanvas: ${doc.name}` : boardTitle || 'DocCanvas Studio',
+        description: `Document annotation session with ${strokes.length} strokes and ${textElements.length} text annotations.`,
+        createdBy: user?.id || 'guest',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        isShared: false,
+        width: 1920,
+        height: 1080,
+        zoom: 100,
+        isInfiniteCanvas: true,
+        strokes: strokes as any,
+        elements: textElements as any,
+        ...(doc ? {
+          bgFile: { url: doc.dataUrl || (doc as any).url, type: doc.type },
+          activeDocument: doc as any,
+        } : {}),
+      };
+      saveBoard(boardPayload);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [strokes, textElements, doc, boardId, boardTitle, user?.id, saveBoard]);
 
   // Redraw Canvas
   const redrawCanvas = useCallback(() => {
@@ -284,10 +327,12 @@ function DocCanvasContent() {
 
   useEffect(() => {
     const handleResize = () => {
-      const container = containerRef.current;
       const canvas = canvasRef.current;
-      if (!container || !canvas) return;
-      const rect = container.getBoundingClientRect();
+      if (!canvas) return;
+      const target = canvas.parentElement || containerRef.current;
+      if (!target) return;
+      const rect = target.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return;
       const dpr = window.devicePixelRatio || 1;
       logicalSizeRef.current = { w: rect.width, h: rect.height };
       canvas.width = rect.width * dpr;
@@ -299,8 +344,16 @@ function DocCanvasContent() {
 
     handleResize();
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [redrawCanvas]);
+    const parentEl = canvasRef.current?.parentElement;
+    const observer = parentEl ? new ResizeObserver(() => handleResize()) : null;
+    if (parentEl && observer) {
+      observer.observe(parentEl);
+    }
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      if (observer) observer.disconnect();
+    };
+  }, [redrawCanvas, doc]);
 
   const getCanvasCoords = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -397,24 +450,6 @@ function DocCanvasContent() {
     setStrokes(prev => [...prev, newStroke]);
   };
 
-  const handleAddWaypoint = (name: string) => {
-    const newWp: Waypoint = {
-      id: `wp_${Date.now()}`,
-      name,
-      panX: panOffset.x,
-      panY: panOffset.y,
-      zoom: zoomScale,
-    };
-    setWaypoints(prev => [...prev, newWp]);
-    showStatus(`Saved view: "${name}"`);
-  };
-
-  const handleSelectWaypoint = (wp: Waypoint) => {
-    setPanOffset({ x: wp.panX, y: wp.panY });
-    setZoomScale(wp.zoom);
-    showStatus(`Glided to view "${wp.name}"`);
-  };
-
   const handleFitBoard = () => {
     setZoomScale(1);
     setPanOffset({ x: 0, y: 0 });
@@ -433,20 +468,20 @@ function DocCanvasContent() {
         {/* Reference Drawer Toggle */}
         <button
           onClick={() => setIsReferenceDrawerOpen(!isReferenceDrawerOpen)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+          className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-all cursor-pointer ${
             isReferenceDrawerOpen
               ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
               : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
           }`}
           title="Toggle Reference Drawer"
         >
-          <PanelLeft className="w-3.5 h-3.5" />
+          <PanelLeft className="w-3 h-3" />
           <span>Reference</span>
         </button>
 
         {/* Open Document File Action */}
-        <label className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl cursor-pointer transition-all shadow-md">
-          <Upload className="w-3.5 h-3.5" />
+        <label className="flex items-center gap-1 px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-medium rounded-lg cursor-pointer transition-all shadow-xs">
+          <Upload className="w-3 h-3" />
           <span>Open Document</span>
           <input
             type="file"
@@ -455,14 +490,6 @@ function DocCanvasContent() {
             className="hidden"
           />
         </label>
-
-        {/* Waypoints Camera Bar */}
-        <WaypointBar
-          waypoints={waypoints}
-          onAddWaypoint={handleAddWaypoint}
-          onSelectWaypoint={handleSelectWaypoint}
-          onDeleteWaypoint={(id) => setWaypoints(prev => prev.filter(w => w.id !== id))}
-        />
       </BoardHeader>
 
       {/* Main Studio Viewport */}
@@ -552,13 +579,7 @@ function DocCanvasContent() {
           <VanishingLaserOverlay isActive={tool === 'laser'} color={LASER_COLOR_MAP[laserColorMode]} />
           <FocusMagnifierOverlay isActive={tool === 'magnify'} containerRef={containerRef} sourceCanvasRef={canvasRef} />
           
-          <TeacherNotesOverlay
-            isTeacher={true}
-            notes={teacherNotes}
-            onUpdateNotes={setTeacherNotes}
-            isVisible={isNotesVisible}
-            onToggleVisibility={() => setIsNotesVisible(!isNotesVisible)}
-          />
+
 
           {/* Toast Notification */}
           {statusMessage && (

@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft, User as UserIcon, Mail, School, Calendar, Users,
-  Camera, CheckCircle, Save, X, Sparkles, BookOpen, ShieldCheck,
+  Camera, CheckCircle, Save, X, ShieldCheck,
   Phone, MapPin, Loader2, AlertCircle, Edit3, Trash2
 } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
@@ -25,7 +25,6 @@ interface UserProfileData {
   phone: string;
   location: string;
   teachingPhilosophy: string;
-  stats: { boards: number; interactions: number };
 }
 
 export default function ProfilePage() {
@@ -54,7 +53,6 @@ function ProfileContent() {
     phone: '',
     location: '',
     teachingPhilosophy: '',
-    stats: { boards: 0, interactions: 0 },
   });
 
   const [isLoading, setIsLoading] = useState(true);
@@ -86,10 +84,6 @@ function ProfileContent() {
           phone: firestoreUser?.phone || '',
           location: firestoreUser?.location || '',
           teachingPhilosophy: firestoreUser?.teachingPhilosophy || '',
-          stats: {
-            boards: firestoreUser?.stats?.boards || 0,
-            interactions: firestoreUser?.stats?.interactions || 0,
-          },
         };
         setProfile(data);
         setFormData(data);
@@ -339,23 +333,7 @@ function ProfileContent() {
             </div>
           </div>
 
-          {/* Quick Workspace Stats */}
-          <div className="grid grid-cols-1 gap-3">
-            {[
-              { label: 'Saved Boards', value: profile.stats.boards, icon: BookOpen, color: 'text-blue-500' },
-              { label: 'AI Interactions', value: profile.stats.interactions, icon: Sparkles, color: 'text-emerald-500' },
-            ].map(({ label, value, icon: Icon, color }) => (
-              <div key={label} className="p-4 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-primary)] flex items-center justify-between shadow-xs">
-                <div className="flex items-center gap-3">
-                  <div className={`p-2.5 rounded-xl bg-[var(--bg-tertiary)] ${color}`}>
-                    <Icon className="w-4 h-4" />
-                  </div>
-                  <span className="text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider">{label}</span>
-                </div>
-                <span className="text-sm font-bold text-[var(--text-primary)]">{value}</span>
-              </div>
-            ))}
-          </div>
+
         </section>
 
         {/* Right Column: Editable Profile Details */}

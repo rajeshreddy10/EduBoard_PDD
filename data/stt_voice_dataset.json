@@ -1,0 +1,323 @@
+{
+  "datasetName": "EduBoard-Classroom-Speech-Dataset-v1",
+  "language": "en-US",
+  "samplesCount": 35,
+  "features": ["energy", "zeroCrossings", "mfccVector", "phonemes", "keywords"],
+  "data": [
+    {
+      "id": "sample_001",
+      "phrase": "draw a circle",
+      "category": "command",
+      "phonemes": "D R AO AH S ER K AH L",
+      "keywords": ["draw", "circle"],
+      "acousticProfile": { "energy": 1240, "zeroCrossings": 82, "mfccVector": [0.42, -0.15, 0.88, 0.31, -0.09] },
+      "confidence": 0.98
+    },
+    {
+      "id": "sample_002",
+      "phrase": "draw a square",
+      "category": "command",
+      "phonemes": "D R AO AH S K W EH R",
+      "keywords": ["draw", "square"],
+      "acousticProfile": { "energy": 1180, "zeroCrossings": 76, "mfccVector": [0.38, -0.12, 0.81, 0.25, -0.05] },
+      "confidence": 0.98
+    },
+    {
+      "id": "sample_003",
+      "phrase": "draw a rectangle",
+      "category": "command",
+      "phonemes": "D R AO AH R EH K T AE NG G AH L",
+      "keywords": ["draw", "rectangle"],
+      "acousticProfile": { "energy": 1350, "zeroCrossings": 94, "mfccVector": [0.45, -0.18, 0.92, 0.35, -0.12] },
+      "confidence": 0.97
+    },
+    {
+      "id": "sample_004",
+      "phrase": "draw a triangle",
+      "category": "command",
+      "phonemes": "D R AO AH T R AY AE NG G AH L",
+      "keywords": ["draw", "triangle"],
+      "acousticProfile": { "energy": 1310, "zeroCrossings": 90, "mfccVector": [0.43, -0.16, 0.89, 0.33, -0.10] },
+      "confidence": 0.97
+    },
+    {
+      "id": "sample_005",
+      "phrase": "clear the board",
+      "category": "command",
+      "phonemes": "K L IH R DH AH B AO R D",
+      "keywords": ["clear", "board"],
+      "acousticProfile": { "energy": 1420, "zeroCrossings": 105, "mfccVector": [0.51, -0.22, 0.95, 0.40, -0.15] },
+      "confidence": 0.99
+    },
+    {
+      "id": "sample_006",
+      "phrase": "clear canvas",
+      "category": "command",
+      "phonemes": "K L IH R K AE N V AH S",
+      "keywords": ["clear", "canvas"],
+      "acousticProfile": { "energy": 1280, "zeroCrossings": 88, "mfccVector": [0.40, -0.14, 0.85, 0.28, -0.08] },
+      "confidence": 0.98
+    },
+    {
+      "id": "sample_007",
+      "phrase": "undo last action",
+      "category": "command",
+      "phonemes": "AH N D UW L AE S T AE K SH AH N",
+      "keywords": ["undo"],
+      "acousticProfile": { "energy": 1150, "zeroCrossings": 72, "mfccVector": [0.35, -0.10, 0.78, 0.22, -0.04] },
+      "confidence": 0.98
+    },
+    {
+      "id": "sample_008",
+      "phrase": "undo",
+      "category": "command",
+      "phonemes": "AH N D UW",
+      "keywords": ["undo"],
+      "acousticProfile": { "energy": 980, "zeroCrossings": 60, "mfccVector": [0.30, -0.08, 0.70, 0.18, -0.02] },
+      "confidence": 0.99
+    },
+    {
+      "id": "sample_009",
+      "phrase": "redo",
+      "category": "command",
+      "phonemes": "R IY D UW",
+      "keywords": ["redo"],
+      "acousticProfile": { "energy": 1020, "zeroCrossings": 65, "mfccVector": [0.32, -0.09, 0.72, 0.20, -0.03] },
+      "confidence": 0.99
+    },
+    {
+      "id": "sample_010",
+      "phrase": "save the board",
+      "category": "command",
+      "phonemes": "S EY V DH AH B AO R D",
+      "keywords": ["save", "board"],
+      "acousticProfile": { "energy": 1260, "zeroCrossings": 85, "mfccVector": [0.41, -0.15, 0.86, 0.30, -0.08] },
+      "confidence": 0.98
+    },
+    {
+      "id": "sample_011",
+      "phrase": "change color to red",
+      "category": "command",
+      "phonemes": "CH EY N JH K AH L ER T UW R EH D",
+      "keywords": ["color", "red"],
+      "acousticProfile": { "energy": 1380, "zeroCrossings": 96, "mfccVector": [0.48, -0.19, 0.91, 0.37, -0.13] },
+      "confidence": 0.97
+    },
+    {
+      "id": "sample_012",
+      "phrase": "change color to blue",
+      "category": "command",
+      "phonemes": "CH EY N JH K AH L ER T UW B L UW",
+      "keywords": ["color", "blue"],
+      "acousticProfile": { "energy": 1360, "zeroCrossings": 95, "mfccVector": [0.47, -0.18, 0.90, 0.36, -0.12] },
+      "confidence": 0.97
+    },
+    {
+      "id": "sample_013",
+      "phrase": "change color to green",
+      "category": "command",
+      "phonemes": "CH EY N JH K AH L ER T UW G R IY N",
+      "keywords": ["color", "green"],
+      "acousticProfile": { "energy": 1390, "zeroCrossings": 98, "mfccVector": [0.49, -0.20, 0.93, 0.38, -0.14] },
+      "confidence": 0.97
+    },
+    {
+      "id": "sample_014",
+      "phrase": "switch to dark mode",
+      "category": "command",
+      "phonemes": "S W IH CH T UW D AA R K M OW D",
+      "keywords": ["switch", "dark", "mode"],
+      "acousticProfile": { "energy": 1300, "zeroCrossings": 89, "mfccVector": [0.44, -0.17, 0.88, 0.34, -0.11] },
+      "confidence": 0.97
+    },
+    {
+      "id": "sample_015",
+      "phrase": "switch to light mode",
+      "category": "command",
+      "phonemes": "S W IH CH T UW L AY T M OW D",
+      "keywords": ["switch", "light", "mode"],
+      "acousticProfile": { "energy": 1290, "zeroCrossings": 87, "mfccVector": [0.43, -0.16, 0.87, 0.33, -0.10] },
+      "confidence": 0.97
+    },
+    {
+      "id": "sample_016",
+      "phrase": "zoom in",
+      "category": "command",
+      "phonemes": "Z UW M IH N",
+      "keywords": ["zoom", "in"],
+      "acousticProfile": { "energy": 1100, "zeroCrossings": 70, "mfccVector": [0.34, -0.10, 0.76, 0.21, -0.04] },
+      "confidence": 0.98
+    },
+    {
+      "id": "sample_017",
+      "phrase": "zoom out",
+      "category": "command",
+      "phonemes": "Z UW M AW T",
+      "keywords": ["zoom", "out"],
+      "acousticProfile": { "energy": 1120, "zeroCrossings": 71, "mfccVector": [0.35, -0.11, 0.77, 0.22, -0.05] },
+      "confidence": 0.98
+    },
+    {
+      "id": "sample_018",
+      "phrase": "activate eraser",
+      "category": "command",
+      "phonemes": "AE K T AH V EY T IH R EY S ER",
+      "keywords": ["eraser"],
+      "acousticProfile": { "energy": 1220, "zeroCrossings": 81, "mfccVector": [0.39, -0.13, 0.83, 0.27, -0.07] },
+      "confidence": 0.96
+    },
+    {
+      "id": "sample_019",
+      "phrase": "hello teacher",
+      "category": "classroom",
+      "phonemes": "HH AH L OW T IY CH ER",
+      "keywords": ["hello", "teacher"],
+      "acousticProfile": { "energy": 1170, "zeroCrossings": 75, "mfccVector": [0.37, -0.11, 0.80, 0.24, -0.05] },
+      "confidence": 0.95
+    },
+    {
+      "id": "sample_020",
+      "phrase": "welcome to class",
+      "category": "classroom",
+      "phonemes": "W EH L K AH M T UW K L AE S",
+      "keywords": ["welcome", "class"],
+      "acousticProfile": { "energy": 1210, "zeroCrossings": 79, "mfccVector": [0.39, -0.13, 0.82, 0.26, -0.06] },
+      "confidence": 0.95
+    },
+    {
+      "id": "sample_021",
+      "phrase": "pythagorean theorem",
+      "category": "math",
+      "phonemes": "P AY TH AE G ER IY AH N TH IY ER AH M",
+      "keywords": ["pythagorean", "theorem"],
+      "acousticProfile": { "energy": 1450, "zeroCrossings": 108, "mfccVector": [0.53, -0.24, 0.97, 0.42, -0.17] },
+      "confidence": 0.96
+    },
+    {
+      "id": "sample_022",
+      "phrase": "quadratic equation",
+      "category": "math",
+      "phonemes": "K W AA D R AE T IH K IH K W EY ZH AH N",
+      "keywords": ["quadratic", "equation"],
+      "acousticProfile": { "energy": 1410, "zeroCrossings": 102, "mfccVector": [0.50, -0.21, 0.94, 0.39, -0.15] },
+      "confidence": 0.96
+    },
+    {
+      "id": "sample_023",
+      "phrase": "calculate derivative of x squared",
+      "category": "math_calculus",
+      "phonemes": "K AE L K Y AH L EY T D ER IH V AH T IH V AH V EH K S S K W EH R D",
+      "keywords": ["calculate", "derivative", "x", "squared"],
+      "acousticProfile": { "energy": 1500, "zeroCrossings": 115, "mfccVector": [0.56, -0.27, 0.99, 0.45, -0.19] },
+      "confidence": 0.99
+    },
+    {
+      "id": "sample_024",
+      "phrase": "photosynthesis process",
+      "category": "science",
+      "phonemes": "F OW T OW S IH N TH AH S IH S P R AA S EH S",
+      "keywords": ["photosynthesis"],
+      "acousticProfile": { "energy": 1430, "zeroCrossings": 104, "mfccVector": [0.52, -0.23, 0.96, 0.41, -0.16] },
+      "confidence": 0.96
+    },
+    {
+      "id": "sample_025",
+      "phrase": "newton laws of motion",
+      "category": "science",
+      "phonemes": "N UW T AH N L AO Z AH V M OW SH AH N",
+      "keywords": ["newton", "laws", "motion"],
+      "acousticProfile": { "energy": 1370, "zeroCrossings": 97, "mfccVector": [0.47, -0.19, 0.91, 0.37, -0.13] },
+      "confidence": 0.96
+    },
+    {
+      "id": "sample_026",
+      "phrase": "one",
+      "category": "number",
+      "phonemes": "W AH N",
+      "keywords": ["one"],
+      "acousticProfile": { "energy": 850, "zeroCrossings": 50, "mfccVector": [0.25, -0.05, 0.60, 0.12, -0.01] },
+      "confidence": 0.99
+    },
+    {
+      "id": "sample_027",
+      "phrase": "two",
+      "category": "number",
+      "phonemes": "T UW",
+      "keywords": ["two"],
+      "acousticProfile": { "energy": 870, "zeroCrossings": 52, "mfccVector": [0.26, -0.05, 0.62, 0.13, -0.01] },
+      "confidence": 0.99
+    },
+    {
+      "id": "sample_028",
+      "phrase": "three",
+      "category": "number",
+      "phonemes": "TH R IY",
+      "keywords": ["three"],
+      "acousticProfile": { "energy": 890, "zeroCrossings": 54, "mfccVector": [0.27, -0.06, 0.64, 0.14, -0.01] },
+      "confidence": 0.99
+    },
+    {
+      "id": "sample_029",
+      "phrase": "four",
+      "category": "number",
+      "phonemes": "F AO R",
+      "keywords": ["four"],
+      "acousticProfile": { "energy": 910, "zeroCrossings": 55, "mfccVector": [0.28, -0.06, 0.66, 0.15, -0.01] },
+      "confidence": 0.99
+    },
+    {
+      "id": "sample_030",
+      "phrase": "five",
+      "category": "number",
+      "phonemes": "F AY V",
+      "keywords": ["five"],
+      "acousticProfile": { "energy": 930, "zeroCrossings": 57, "mfccVector": [0.29, -0.07, 0.68, 0.16, -0.02] },
+      "confidence": 0.99
+    },
+    {
+      "id": "sample_031",
+      "phrase": "export as pdf",
+      "category": "command",
+      "phonemes": "EH K S P AO R T AE Z P IY D IY EH F",
+      "keywords": ["export", "pdf"],
+      "acousticProfile": { "energy": 1270, "zeroCrossings": 86, "mfccVector": [0.42, -0.15, 0.85, 0.29, -0.08] },
+      "confidence": 0.98
+    },
+    {
+      "id": "sample_032",
+      "phrase": "add text hello world",
+      "category": "command",
+      "phonemes": "AE D T EH K S T HH AH L OW W ER L D",
+      "keywords": ["add", "text", "hello"],
+      "acousticProfile": { "energy": 1330, "zeroCrossings": 92, "mfccVector": [0.44, -0.17, 0.88, 0.33, -0.11] },
+      "confidence": 0.97
+    },
+    {
+      "id": "sample_033",
+      "phrase": "delete selected item",
+      "category": "command",
+      "phonemes": "D IH L IY T S AH L EH K T AH D AY T AH M",
+      "keywords": ["delete", "selected"],
+      "acousticProfile": { "energy": 1250, "zeroCrossings": 84, "mfccVector": [0.40, -0.14, 0.84, 0.28, -0.07] },
+      "confidence": 0.98
+    },
+    {
+      "id": "sample_034",
+      "phrase": "solve linear equation",
+      "category": "math",
+      "phonemes": "S AA L V L IH N IY ER IH K W EY ZH AH N",
+      "keywords": ["solve", "linear", "equation"],
+      "acousticProfile": { "energy": 1400, "zeroCrossings": 101, "mfccVector": [0.49, -0.20, 0.93, 0.38, -0.14] },
+      "confidence": 0.97
+    },
+    {
+      "id": "sample_035",
+      "phrase": "explain periodic table",
+      "category": "science",
+      "phonemes": "IH K S P L EY N P IH R IY AA D IH K T EY B AH L",
+      "keywords": ["explain", "periodic", "table"],
+      "acousticProfile": { "energy": 1440, "zeroCrossings": 106, "mfccVector": [0.52, -0.23, 0.96, 0.41, -0.16] },
+      "confidence": 0.97
+    }
+  ]
+}

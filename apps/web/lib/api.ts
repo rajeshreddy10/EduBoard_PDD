@@ -17,7 +17,13 @@ import {
 } from './types';
 import * as store from './store';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const getApiBaseUrl = () => {
+  if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
+  if (typeof window !== 'undefined' && window.location.hostname) {
+    return `http://${window.location.hostname}:3001/api`;
+  }
+  return 'http://localhost:3001/api';
+};
 
 class EduBoardAPI {
   private client: AxiosInstance;
@@ -49,12 +55,16 @@ class EduBoardAPI {
 
   constructor() {
     this.client = axios.create({
-      baseURL: API_BASE_URL,
+      baseURL: getApiBaseUrl(),
       headers: { 'Content-Type': 'application/json' },
       timeout: 30000, // 30s for AI operations
     });
 
     this.client.interceptors.request.use(async (config) => {
+      // Dynamically update baseURL if on client-side
+      if (typeof window !== 'undefined' && config.baseURL?.includes('localhost') && window.location.hostname !== 'localhost') {
+        config.baseURL = `http://${window.location.hostname}:3001/api`;
+      }
       // Get the latest Firebase ID token automatically
       const firebaseUser = auth.currentUser;
       if (firebaseUser) {

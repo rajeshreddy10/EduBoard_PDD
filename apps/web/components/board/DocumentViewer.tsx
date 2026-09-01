@@ -11,6 +11,7 @@ interface DocumentViewerProps {
   className?: string;
   docMode?: 'write' | 'scroll';
   onDocModeChange?: (mode: 'write' | 'scroll') => void;
+  allowWriteToggle?: boolean;
   onScroll?: (scrollTop: number) => void;
   children?: React.ReactNode;
 }
@@ -21,6 +22,7 @@ export const DocumentViewer = React.forwardRef<HTMLDivElement, DocumentViewerPro
   className = '',
   docMode = 'write',
   onDocModeChange,
+  allowWriteToggle = true,
   onScroll,
   children
 }: DocumentViewerProps, ref) {
@@ -90,7 +92,7 @@ export const DocumentViewer = React.forwardRef<HTMLDivElement, DocumentViewerPro
         {/* Mode Toggles & Controls */}
         <div className="flex items-center gap-3">
           {/* Scroll vs Write Mode Toggle */}
-          {onDocModeChange && (
+          {onDocModeChange && allowWriteToggle && (
             <div className="flex items-center bg-slate-200 dark:bg-slate-800 p-1 rounded-xl gap-1 mr-2 shadow-inner">
               <button
                 onClick={() => onDocModeChange('write')}
@@ -174,43 +176,51 @@ export const DocumentViewer = React.forwardRef<HTMLDivElement, DocumentViewerPro
           className={`h-full overflow-y-auto scrollbar-thin p-8 ${docMode === 'write' ? 'overflow-x-hidden' : ''}`}
         >
           {/* Document Content */}
-          <div className="relative mx-auto max-w-4xl min-h-full shadow-sm bg-white dark:bg-slate-900 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800">
-            {isImage && doc.dataUrl ? (
-              <Image
-                src={doc.dataUrl}
-                alt={doc.name}
-                width={1200}
-                height={800}
-                className="w-full h-auto block"
-                unoptimized
-              />
-            ) : isPdf && doc.dataUrl ? (
-              <iframe src={pdfUrlNoPrint} title={doc.name} className="w-full h-[70vh] border-0" />
-            ) : isPresentation ? (
-              <div className="p-10 min-h-[500px] flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between mb-8 opacity-50">
-                    <span className="text-[10px] font-black text-amber-500 uppercase tracking-[0.2em]">{doc.name}</span>
-                    <span className="text-[10px] font-mono">Slide {currentSlideIndex + 1}</span>
+          <div className="relative mx-auto max-w-4xl min-h-[70vh] shadow-sm bg-white dark:bg-slate-900 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800">
+            <div className={`w-full h-full ${docMode === 'write' ? 'pointer-events-none select-none' : 'pointer-events-auto'}`}>
+              {isImage && doc.dataUrl ? (
+                <Image
+                  src={doc.dataUrl}
+                  alt={doc.name}
+                  width={1200}
+                  height={800}
+                  className="w-full h-auto block select-none"
+                  unoptimized
+                />
+              ) : isPdf && doc.dataUrl ? (
+                <iframe
+                  src={pdfUrlNoPrint}
+                  title={doc.name}
+                  className={`w-full h-[75vh] min-h-[500px] border-0 rounded-xl transition-all ${
+                    docMode === 'write' ? 'pointer-events-none select-none' : 'pointer-events-auto'
+                  }`}
+                />
+              ) : isPresentation ? (
+                <div className="p-10 min-h-[500px] flex flex-col justify-between select-none">
+                  <div>
+                    <div className="flex items-center justify-between mb-8 opacity-50">
+                      <span className="text-[10px] font-black text-amber-500 uppercase tracking-[0.2em]">{doc.name}</span>
+                      <span className="text-[10px] font-mono">Slide {currentSlideIndex + 1}</span>
+                    </div>
+                    <pre className="whitespace-pre-wrap font-sans text-lg text-slate-800 dark:text-slate-100 leading-relaxed">
+                      {activeSlideText}
+                    </pre>
                   </div>
-                  <pre className="whitespace-pre-wrap font-sans text-lg text-slate-800 dark:text-slate-100 leading-relaxed">
-                    {activeSlideText}
+                  <div className="mt-10 pt-6 border-t border-slate-100 dark:border-slate-800 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">
+                    EduBoard Presentation Engine
+                  </div>
+                </div>
+              ) : (
+                <div className="p-10 min-h-[500px] select-none">
+                  <pre className="whitespace-pre-wrap font-sans text-base text-slate-800 dark:text-slate-200 leading-relaxed">
+                    {doc.textContent || '[Document Loaded Successfully]'}
                   </pre>
                 </div>
-                <div className="mt-10 pt-6 border-t border-slate-100 dark:border-slate-800 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">
-                  EduBoard Presentation Engine
-                </div>
-              </div>
-            ) : (
-              <div className="p-10 min-h-[500px]">
-                <pre className="whitespace-pre-wrap font-sans text-base text-slate-800 dark:text-slate-200 leading-relaxed">
-                  {doc.textContent || '[Document Loaded Successfully]'}
-                </pre>
-              </div>
-            )}
+              )}
+            </div>
 
             {/* The Drawing Overlay (Canvas should be inserted here) */}
-            <div className="absolute inset-0 z-20 pointer-events-none">
+            <div className={`absolute inset-0 z-20 ${docMode === 'write' ? 'pointer-events-auto cursor-crosshair' : 'pointer-events-none'}`}>
               {children}
             </div>
           </div>

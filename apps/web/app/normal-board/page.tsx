@@ -15,7 +15,6 @@ import { VanishingLaserOverlay } from '@/components/board/VanishingLaserOverlay'
 import { SpotlightOverlay } from '@/components/board/SpotlightOverlay';
 import { ReferenceDrawer } from '@/components/board/ReferenceDrawer';
 import { ProgressiveRevealBar, StepGroup } from '@/components/board/ProgressiveRevealBar';
-import { WaypointBar, Waypoint } from '@/components/board/WaypointBar';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { TeacherNotesOverlay, TeacherNote } from '@/components/board/TeacherNotesOverlay';
 import { PresentationPointerOverlay, LaserPoint, LaserColorMode, LASER_COLOR_MAP } from '@/components/board/PresentationPointerOverlay';
@@ -63,8 +62,9 @@ function NormalBoardContent() {
   const searchParams = useSearchParams();
   const queryId = searchParams?.get('id');
   const { user } = useAuth();
-  const { saveBoard, boards } = useBoard();
+  const { saveBoard, boards, setCurrentBoard } = useBoard();
   const [boardId, setBoardId] = useState<string>(() => queryId || `drawspace_${Date.now()}`);
+  const [boardTitle, setBoardTitle] = useState<string>('DrawSpace Interactive Whiteboard');
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   const [tool, setTool] = useState<DrawTool>('pen');
@@ -86,9 +86,6 @@ function NormalBoardContent() {
   const [steps, setSteps] = useState<StepGroup[]>([]);
   const [currentRevealStep, setCurrentRevealStep] = useState(0);
   const [isRevealActive, setIsRevealActive] = useState(false);
-
-  // Waypoints State
-  const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
 
   // Presentation & Teacher State
   const [laserColorMode, setLaserColorMode] = useState<LaserColorMode>('red');
@@ -125,32 +122,51 @@ function NormalBoardContent() {
     const targetId = queryId;
     let isMounted = true;
     async function loadSavedDrawSpaceBoard() {
+      console.log('[History Resume] Loading saved history session:', targetId);
       let b = boards.find(item => item.id === targetId) || store.getBoard(targetId);
       if (!b && user?.id) {
         b = (await historyService.getHistoryItem(user.id, targetId)) || undefined;
       }
       if (b && isMounted) {
         setBoardId(b.id);
-        if (b.strokes && Array.isArray(b.strokes)) {
-          setStrokes(b.strokes as any);
+        if (b.title) setBoardTitle(b.title);
+        setCurrentBoard(b);
+
+        let loadedStrokes: Stroke[] = [];
+        if (b.strokes && Array.isArray(b.strokes) && b.strokes.length > 0) {
+          loadedStrokes = b.strokes as any;
+        } else if (b.content && typeof b.content === 'string' && b.content.trim().length > 0) {
+          try {
+            const parsed = JSON.parse(b.content);
+            if (Array.isArray(parsed)) loadedStrokes = parsed;
+            else if (parsed && Array.isArray(parsed.strokes)) loadedStrokes = parsed.strokes;
+          } catch {}
         }
-        if (b.elements && Array.isArray(b.elements)) {
-          setTextElements(b.elements as any);
+        if (loadedStrokes.length === 0) {
+          const local = store.getDrawings(targetId);
+          if (local && local.length > 0) loadedStrokes = local as any;
         }
-        if ((b as any).activeDocument) {
-          setActiveDocument((b as any).activeDocument);
+
+        let loadedElements: BoardTextElement[] = [];
+        if (b.elements && Array.isArray(b.elements) && b.elements.length > 0) {
+          loadedElements = b.elements as any;
+        } else if (b.content && typeof b.content === 'string') {
+          try {
+            const parsed = JSON.parse(b.content);
+            if (parsed && Array.isArray(parsed.elements)) loadedElements = parsed.elements;
+          } catch {}
         }
-        if ((b as any).waypoints && Array.isArray((b as any).waypoints)) {
-          setWaypoints((b as any).waypoints);
-        }
-        if ((b as any).teacherNotes && Array.isArray((b as any).teacherNotes)) {
-          setTeacherNotes((b as any).teacherNotes);
-        }
+
+        setStrokes(loadedStrokes);
+        setTextElements(loadedElements);
+        if ((b as any).activeDocument) setActiveDocument((b as any).activeDocument);
+        if ((b as any).teacherNotes && Array.isArray((b as any).teacherNotes)) setTeacherNotes((b as any).teacherNotes);
+        console.log(`[History Resume] Board "${b.title}" resumed cleanly with ${loadedStrokes.length} strokes.`);
       }
     }
     loadSavedDrawSpaceBoard();
     return () => { isMounted = false; };
-  }, [queryId, boards, user?.id]);
+  }, [queryId, user?.id]);
 
   // Keyboard Shift key listener to temporarily activate Spotlight
   useEffect(() => {
@@ -212,7 +228,7 @@ function NormalBoardContent() {
       const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       const boardPayload: Board = {
         id: boardId,
-        title: activeDocument ? `DrawSpace: ${activeDocument.name}` : 'DrawSpace Interactive Whiteboard',
+        title: activeDocument ? `DrawSpace: ${activeDocument.name}` : boardTitle || 'DrawSpace Interactive Whiteboard',
         description: `Interactive canvas session with ${strokes.length} strokes and ${textElements.length} text elements.`,
         createdBy: user?.id || 'guest',
         createdAt: now.toISOString(),
@@ -241,6 +257,34 @@ function NormalBoardContent() {
       setTimeout(() => setSaveStatus('idle'), 4000);
     }
   };
+
+  // Auto-save Normal Board state so history is updated automatically as you work
+  useEffect(() => {
+    if (strokes.length === 0 && textElements.length === 0 && !activeDocument) return;
+    const timer = setTimeout(() => {
+      const boardPayload: Board = {
+        id: boardId,
+        title: activeDocument ? `DrawSpace: ${activeDocument.name}` : boardTitle || 'Normal Board Interactive Whiteboard',
+        description: `Interactive canvas session with ${strokes.length} strokes and ${textElements.length} text elements.`,
+        createdBy: user?.id || 'guest',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        isShared: false,
+        width: 1920,
+        height: 1080,
+        zoom: 100,
+        isInfiniteCanvas: true,
+        strokes: strokes as any,
+        elements: textElements as any,
+        ...(activeDocument ? {
+          bgFile: { url: activeDocument.dataUrl || (activeDocument as any).url, type: activeDocument.type },
+          activeDocument: activeDocument as any,
+        } : {}),
+      };
+      saveBoard(boardPayload);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [strokes, textElements, activeDocument, boardId, boardTitle, user?.id, saveBoard]);
 
   // ── Filter Visible Items based on Progressive Reveal ─────────────────────
   const visibleStrokes = React.useMemo(() => {
@@ -399,52 +443,6 @@ function NormalBoardContent() {
     showStatus(`Grouped board content into Step ${newStepNum}`);
   };
 
-  // ── Waypoint Camera Glide Handler ─────────────────────────────────────────
-  const handleAddWaypoint = (name: string) => {
-    const newWp: Waypoint = {
-      id: `wp_${Date.now()}`,
-      name,
-      panX: panOffset.x,
-      panY: panOffset.y,
-      zoom: zoomScale,
-    };
-    setWaypoints(prev => [...prev, newWp]);
-    showStatus(`Saved view: "${name}"`);
-  };
-
-  const handleSelectWaypoint = (wp: Waypoint) => {
-    // Smooth camera glide animation using requestAnimationFrame
-    const startPanX = panOffset.x;
-    const startPanY = panOffset.y;
-    const startZoom = zoomScale;
-    const targetPanX = wp.panX;
-    const targetPanY = wp.panY;
-    const targetZoom = wp.zoom;
-    const startTime = performance.now();
-    const duration = 400; // 400ms smooth camera glide
-
-    const animateCamera = (now: number) => {
-      const elapsed = now - startTime;
-      const progress = Math.min(1, elapsed / duration);
-      // Smooth easeInOutQuad interpolation
-      const ease = progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
-
-      setPanOffset({
-        x: startPanX + (targetPanX - startPanX) * ease,
-        y: startPanY + (targetPanY - startPanY) * ease,
-      });
-      setZoomScale(startZoom + (targetZoom - startZoom) * ease);
-
-      if (progress < 1) {
-        requestAnimationFrame(animateCamera);
-      } else {
-        showStatus(`Glided to camera view "${wp.name}"`);
-      }
-    };
-
-    requestAnimationFrame(animateCamera);
-  };
-
   const handleFitBoard = () => {
     setZoomScale(1);
     setPanOffset({ x: 0, y: 0 });
@@ -464,24 +462,16 @@ function NormalBoardContent() {
           {/* Reference Drawer Toggle */}
           <button
             onClick={() => setIsReferenceDrawerOpen(!isReferenceDrawerOpen)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-all cursor-pointer ${
               isReferenceDrawerOpen
                 ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
                 : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border-[var(--border-primary)] hover:bg-[var(--bg-hover)]'
             }`}
             title="Toggle Reference Drawer (30/70 Side-by-Side)"
           >
-            <PanelLeft className="w-3.5 h-3.5" />
+            <PanelLeft className="w-3 h-3" />
             <span>Reference</span>
           </button>
-
-          {/* Waypoint Camera Bar */}
-          <WaypointBar
-            waypoints={waypoints}
-            onAddWaypoint={handleAddWaypoint}
-            onSelectWaypoint={handleSelectWaypoint}
-            onDeleteWaypoint={(id) => setWaypoints(prev => prev.filter(w => w.id !== id))}
-          />
 
           {/* Progressive Reveal Bar */}
           <ProgressiveRevealBar

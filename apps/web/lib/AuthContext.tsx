@@ -11,6 +11,8 @@ import {
   onAuthStateChanged,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   sendPasswordResetEmail,
   updatePassword as firebaseUpdatePassword,
   updateProfile as firebaseUpdateProfile,
@@ -68,13 +70,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    // Handle OAuth redirect result if redirect sign-in was triggered
+    getRedirectResult(auth).then(async (result) => {
+      if (result?.user) {
+        console.log('[Firebase Auth] Google redirect login successful for UID:', result.user.uid);
+        try {
+          const userRef = doc(db, 'users', result.user.uid);
+          const userDoc = await getDoc(userRef);
+          if (!userDoc.exists()) {
+            await setDoc(userRef, {
+              name: result.user.displayName || result.user.email?.split('@')[0],
+              email: result.user.email,
+              role: 'student',
+              createdAt: serverTimestamp(),
+              lastLoginAt: serverTimestamp(),
+            });
+          }
+        } catch (firestoreErr) {
+          console.warn("[Firebase Firestore] Redirect user doc write note:", firestoreErr);
+        }
+      }
+    }).catch((err) => {
+      console.warn('[Firebase Auth] Redirect result notice:', err.message);
+    });
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setLoading(true);
       try {
+        console.log('[Firebase Auth] Auth state changed:', firebaseUser ? `User ${firebaseUser.email} (${firebaseUser.uid})` : 'Unauthenticated');
         const mappedUser = await mapUser(firebaseUser);
         setUser(mappedUser);
       } catch (err) {
-        console.error("Auth mapping error:", err);
+        console.error("[Firebase Auth] Auth mapping error:", err);
       } finally {
         setLoading(false);
       }
@@ -87,13 +114,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setError(null);
       const normalizedEmail = email.toLowerCase().trim();
-      await signInWithEmailAndPassword(auth, normalizedEmail, password);
+      console.log('[Firebase Auth] Initiating email/password login for:', normalizedEmail);
+      const res = await signInWithEmailAndPassword(auth, normalizedEmail, password);
+      console.log('[Firebase Auth] Login successful for UID:', res.user.uid);
       try {
         await api.login({ email: normalizedEmail, password });
       } catch (backendErr) {
-        console.warn("Backend login sync note:", backendErr);
+        console.warn("[Firebase Auth] Backend login sync note:", backendErr);
       }
     } catch (err: any) {
+      console.error('[Firebase Auth] Login error:', err.message);
       setError(err.message);
       throw err;
     }
@@ -102,29 +132,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loginWithGoogle = async () => {
     try {
       setError(null);
+      console.log('[Firebase Auth] Initiating Google OAuth sign-in...');
       const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
+      provider.setCustomParameters({ prompt: 'select_account' });
 
-      // Ensure user document exists (tolerate Firestore being unavailable/locked down)
       try {
-        const userRef = doc(db, 'users', result.user.uid);
-        const userDoc = await getDoc(userRef);
+        const result = await signInWithPopup(auth, provider);
+        console.log('[Firebase Auth] Google popup login successful for UID:', result.user.uid);
 
-        if (!userDoc.exists()) {
-          await setDoc(userRef, {
-            name: result.user.displayName,
-            email: result.user.email,
-            role: 'student',
-            createdAt: serverTimestamp(),
-            lastLoginAt: serverTimestamp(),
-          });
+        // Ensure user document exists in Firestore
+        try {
+          const userRef = doc(db, 'users', result.user.uid);
+          const userDoc = await getDoc(userRef);
+
+          if (!userDoc.exists()) {
+            console.log('[Firebase Firestore] Creating new user profile document for Google user:', result.user.uid);
+            await setDoc(userRef, {
+              name: result.user.displayName || result.user.email?.split('@')[0],
+              email: result.user.email,
+              role: 'student',
+              createdAt: serverTimestamp(),
+              lastLoginAt: serverTimestamp(),
+            });
+          }
+        } catch (firestoreErr) {
+          console.warn("[Firebase Firestore] User doc write note:", firestoreErr);
         }
-      } catch (firestoreErr) {
-        console.warn("Firestore user doc write failed (likely rules not configured):", firestoreErr);
+      } catch (popupErr: any) {
+        console.warn('[Firebase Auth] Popup OAuth attempt note:', popupErr.code, popupErr.message);
+        if (
+          popupErr.code === 'auth/popup-blocked' ||
+          popupErr.code === 'auth/cancelled-popup-request' ||
+          popupErr.code === 'auth/operation-not-supported-in-this-environment' ||
+          popupErr.code === 'auth/disallowed_useragent'
+        ) {
+          console.log('[Firebase Auth] Popup blocked or unsupported. Falling back to OAuth redirect mode...');
+          await signInWithRedirect(auth, provider);
+        } else if (popupErr.code === 'auth/popup-closed-by-user') {
+          throw new Error('Google Sign-In popup was closed before completing. Please try again.');
+        } else if (popupErr.code === 'auth/unauthorized-domain') {
+          throw new Error('This domain/IP is not listed in Firebase Console Authorized Domains. Please add it in Firebase Console.');
+        } else {
+          throw popupErr;
+        }
       }
     } catch (err: any) {
-      setError(err.message);
-      throw err;
+      console.error('[Firebase Auth] Google sign-in error:', err.message);
+      const message = err.message || 'Google sign-in failed.';
+      setError(message);
+      throw new Error(message);
     }
   };
 
@@ -139,14 +195,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setError(null);
       if (password !== confirmPassword) throw new Error("Passwords do not match");
       const normalizedEmail = email.toLowerCase().trim();
+      console.log('[Firebase Auth] Creating user account:', normalizedEmail);
 
       const result = await createUserWithEmailAndPassword(auth, normalizedEmail, password);
+      console.log('[Firebase Auth] User created successfully. UID:', result.user.uid);
 
-      // Update display name
+      // Update display name in Firebase Auth
       await firebaseUpdateProfile(result.user, { displayName: name });
+      console.log('[Firebase Auth] Updated display name to:', name);
 
-      // Create user document with cross-platform compatible schema
+      // Create user document in Firestore (Menu Option integration)
       try {
+        console.log('[Firebase Firestore] Creating user profile record for:', result.user.uid);
         await setDoc(doc(db, 'users', result.user.uid), {
           name,
           full_name: name,
@@ -156,16 +216,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           lastLoginAt: serverTimestamp(),
         });
       } catch (firestoreErr) {
-        console.warn("Firestore user doc write failed:", firestoreErr);
+        console.warn("[Firebase Firestore] Profile creation note:", firestoreErr);
       }
 
       // Sync backend register to populate password_hash for Android login
       try {
         await api.signup({ email: normalizedEmail, password, name, confirmPassword, role });
       } catch (apiErr) {
-        console.warn("Backend signup sync note:", apiErr);
+        console.warn("[Firebase Auth] Backend signup sync note:", apiErr);
       }
     } catch (err: any) {
+      console.error('[Firebase Auth] Signup error:', err.message);
       setError(err.message);
       throw err;
     }
@@ -173,9 +234,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
+      console.log('[Firebase Auth] Signing out user...');
       await signOut(auth);
       setUser(null);
+      console.log('[Firebase Auth] User signed out successfully.');
     } catch (err: any) {
+      console.error('[Firebase Auth] Logout error:', err.message);
       setError(err.message);
     }
   };
@@ -183,8 +247,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const resetPassword = async (email: string) => {
     try {
       setError(null);
+      console.log('[Firebase Auth] Sending password reset email to:', email);
       await sendPasswordResetEmail(auth, email);
+      console.log('[Firebase Auth] Password reset email sent successfully.');
     } catch (err: any) {
+      console.error('[Firebase Auth] Reset password error:', err.message);
       setError(err.message);
       throw err;
     }
@@ -194,8 +261,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setError(null);
       if (!auth.currentUser) throw new Error("No authenticated user found.");
+      console.log('[Firebase Auth/Security] Updating user password...');
       await firebaseUpdatePassword(auth.currentUser, password);
+      console.log('[Firebase Auth/Security] Password updated successfully.');
     } catch (err: any) {
+      console.error('[Firebase Auth/Security] Password update error:', err.message);
       setError(err.message);
       throw err;
     }
@@ -206,6 +276,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setError(null);
       if (auth.currentUser) {
         if (updates.name || updates.avatar) {
+          console.log('[Firebase Auth] Updating Auth profile fields:', updates);
           await firebaseUpdateProfile(auth.currentUser, {
             displayName: updates.name || auth.currentUser.displayName,
             photoURL: updates.avatar || auth.currentUser.photoURL,
@@ -214,6 +285,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       setUser(prev => prev ? { ...prev, ...updates } : null);
     } catch (err: any) {
+      console.error('[Firebase Auth] Update profile error:', err.message);
       setError(err.message);
       throw err;
     }

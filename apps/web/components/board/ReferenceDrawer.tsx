@@ -82,6 +82,8 @@ export const ReferenceDrawer: React.FC<ReferenceDrawerProps> = ({
             {doc ? (
               <DocumentViewer
                 document={doc}
+                docMode="scroll"
+                allowWriteToggle={false}
                 onClose={() => onDocumentChange(null)}
                 className="h-full max-h-none rounded-2xl border-white/10 shadow-none"
               />

@@ -139,9 +139,23 @@ router.post('/login', asyncHandler(async (req, res) => {
   }
 
   const normalizedEmail = email.toLowerCase().trim();
-  let snapshot = await db.db.collection('users').where('email', '==', normalizedEmail).get();
+  let snapshot = { empty: true, docs: [] };
+  try {
+    if (db.db && typeof db.db.collection === 'function') {
+      snapshot = await db.db.collection('users').where('email', '==', normalizedEmail).get();
+    }
+  } catch {}
 
-  // If not found in Firestore, check if user exists in Firebase Auth (e.g. created on Web)
+  if (snapshot.empty) {
+    try {
+      const sqlUsers = await db.query('SELECT * FROM users WHERE email = ?', [normalizedEmail]);
+      if (sqlUsers && sqlUsers.length > 0) {
+        snapshot = { empty: false, docs: [{ id: sqlUsers[0].id, data: () => sqlUsers[0] }] };
+      }
+    } catch {}
+  }
+
+  // If not found in Firestore/DB, check if user exists in Firebase Auth (e.g. created on Web)
   if (snapshot.empty) {
     try {
       const admin = require('firebase-admin');
@@ -179,13 +193,16 @@ router.post('/login', asyncHandler(async (req, res) => {
     return res.status(403).json({ error: 'Account suspended' });
   }
 
-  if (!user.password_hash) {
+  const storedHash = user.password_hash || user.password;
+  if (!storedHash) {
     // If account was created via Google or Web without password_hash, bind the password to allow password login
     const newHash = await hashPassword(password);
-    await db.db.collection('users').doc(user.id).set({ password_hash: newHash }, { merge: true });
+    try {
+      await db.db.collection('users').doc(user.id).set({ password_hash: newHash }, { merge: true });
+    } catch {}
     user.password_hash = newHash;
   } else {
-    const valid = await comparePassword(password, user.password_hash);
+    const valid = await comparePassword(password, storedHash);
     if (!valid) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }

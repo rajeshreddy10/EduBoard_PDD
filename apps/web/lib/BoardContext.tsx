@@ -168,7 +168,21 @@ export function BoardProvider({ children }: { children: ReactNode }) {
     }
     if (board) {
       setCurrentBoard(board);
-      setStrokes(store.getDrawings(id));
+      let loadedStrokes: DrawingStroke[] = [];
+      if (board.strokes && Array.isArray(board.strokes) && board.strokes.length > 0) {
+        loadedStrokes = board.strokes as any;
+      } else if (board.content && typeof board.content === 'string') {
+        try {
+          const parsed = JSON.parse(board.content);
+          if (Array.isArray(parsed)) loadedStrokes = parsed;
+          else if (parsed && Array.isArray(parsed.strokes)) loadedStrokes = parsed.strokes;
+        } catch {}
+      }
+      if (loadedStrokes.length === 0) {
+        const local = store.getDrawings(id);
+        if (local && local.length > 0) loadedStrokes = local;
+      }
+      setStrokes(loadedStrokes);
       setUndoStack([]);
       setRedoStack([]);
       socketService.joinBoard(id);
@@ -190,23 +204,31 @@ export function BoardProvider({ children }: { children: ReactNode }) {
     const targetBoard = payload || currentBoard;
     if (!targetBoard) return;
 
+    const strokesToSave = payload?.strokes || strokes;
+    const elementsToSave = payload?.elements || [];
+
     const updatedBoard: Board = {
       ...targetBoard,
-      content: payload?.content || (strokes.length > 0 ? JSON.stringify(strokes) : targetBoard.content || ''),
+      content: payload?.content || JSON.stringify({ strokes: strokesToSave, elements: elementsToSave }),
+      strokes: strokesToSave,
+      elements: elementsToSave,
       updatedAt: new Date().toISOString()
     };
 
-    store.saveDrawings(targetBoard.id, payload?.strokes || strokes);
+    store.saveDrawings(targetBoard.id, strokesToSave);
     store.updateBoard(targetBoard.id, updatedBoard);
     
     if (user?.id) {
       await historyService.saveHistoryItem(user.id, updatedBoard);
     }
     
+    setCurrentBoard(updatedBoard);
     setBoards(prev => {
-      const exists = prev.some(b => b.id === targetBoard.id);
-      if (exists) {
-        return prev.map(b => b.id === targetBoard.id ? updatedBoard : b);
+      const idx = prev.findIndex(b => b.id === targetBoard.id);
+      if (idx !== -1) {
+        const next = [...prev];
+        next[idx] = updatedBoard;
+        return next;
       }
       return [updatedBoard, ...prev];
     });

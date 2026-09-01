@@ -7,7 +7,7 @@ import { getUser } from '@/lib/store';
 import { useAuth } from '@/lib/AuthContext';
 
 import {
-  LayoutDashboard, History as HistoryIcon, Bell, Mic, Grid3X3, NotebookPen, User, Settings, Palette, HelpCircle, Menu, LogOut
+  LayoutDashboard, History as HistoryIcon, Bell, Mic, Grid3X3, NotebookPen, User, Settings, Palette, HelpCircle, Menu, LogOut, Sparkles
 } from 'lucide-react';
 
 const I = {
@@ -21,6 +21,7 @@ const I = {
   settings: <Settings size={18} />,
   theme: <Palette size={18} />,
   help: <HelpCircle size={18} />,
+  onboarding: <Sparkles size={18} />,
   collapse: <Menu size={18} />,
 };
 
@@ -53,6 +54,7 @@ const NAV = [
     section: 'SUPPORT',
     items: [
       { label: 'Help & Tutorials', href: '/help', icon: I.help },
+      { label: 'Onboarding Tour', href: '/onboarding', icon: I.onboarding },
     ],
   },
 ];

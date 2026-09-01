@@ -6,7 +6,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import * as store from '@/lib/store';
 import {
   Mic, MicOff, Pen, Eraser, Move, Type, Trash2, Download, Upload,
-  Undo2, Redo2, FileText, CheckCircle2, Sparkles, AlertCircle, Volume2, Plus, Minus
+  Undo2, Redo2, FileText, AlertCircle, Volume2, Plus, Minus,
+  Command, MessageSquare, HelpCircle
 } from 'lucide-react';
 import { BoardHeader, SaveStatusType } from '@/components/layout/BoardHeader';
 import { TextElementOverlay, BoardTextElement } from '@/components/board/TextElementOverlay';
@@ -80,25 +81,26 @@ function VoiceBoardContent() {
   const searchParams = useSearchParams();
   const queryId = searchParams?.get('id');
   const { user } = useAuth();
-  const { saveBoard, boards } = useBoard();
+  const { saveBoard, boards, setCurrentBoard } = useBoard();
   const [boardId, setBoardId] = useState<string>(() => queryId || `voiceboard_${Date.now()}`);
+  const [boardTitle, setBoardTitle] = useState<string>('Voice AI Interactive Board');
 
   const [saveStatus, setSaveStatus] = useState<SaveStatusType>('idle');
   const [lastSavedTime, setLastSavedTime] = useState<string>('');
 
-  // ── Mode & State ──────────────────────────────────────────────────────────
+  // Mode & State
   const [isVoiceActive, setIsVoiceActive] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [voiceStatus, setVoiceStatus] = useState<'Voice OFF' | 'Voice ON' | 'Listening...'>('Voice OFF');
   const [interimText, setInterimText] = useState('');
   const [voiceError, setVoiceError] = useState<string | null>(null);
 
+
+
   // Drawing tools state
   const [tool, setTool] = useState<ToolMode>('pen');
   const [color, setColor] = useState('#1e293b');
   const [strokeWidth, setStrokeWidth] = useState(4);
-
-  // Font size state for Voice Board text elements (Requirement 4)
   const [fontSize, setFontSize] = useState<number>(24);
 
   // Canvas elements state
@@ -107,12 +109,12 @@ function VoiceBoardContent() {
   const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
   const [activeDocument, setActiveDocument] = useState<ImportedFileData | null>(null);
 
-  // Undo / Redo Stacks & Word Stack (Requirement 3)
+  // Undo / Redo Stacks & Word Stack
   const [undoStack, setUndoStack] = useState<{ strokes: Stroke[]; textElements: BoardTextElement[] }[]>([]);
   const [redoStack, setRedoStack] = useState<{ strokes: Stroke[]; textElements: BoardTextElement[] }[]>([]);
   const [redoWordsStack, setRedoWordsStack] = useState<{ elementId: string; word: string; x: number; y: number; fontSize: number; color: string }[]>([]);
 
-  // Refs for Speech Recognition Session Management (Requirement 1 & 2)
+  // Refs for Speech Recognition Session Management
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const isDrawingRef = useRef(false);
   const currentStrokeRef = useRef<{ x: number; y: number }[]>([]);
@@ -133,20 +135,42 @@ function VoiceBoardContent() {
       }
       if (b && isMounted) {
         setBoardId(b.id);
-        if (b.strokes && Array.isArray(b.strokes)) {
-          setStrokes(b.strokes as any);
+        if (b.title) setBoardTitle(b.title);
+        setCurrentBoard(b);
+
+        let loadedStrokes: Stroke[] = [];
+        if (b.strokes && Array.isArray(b.strokes) && b.strokes.length > 0) {
+          loadedStrokes = b.strokes as any;
+        } else if (b.content && typeof b.content === 'string' && b.content.trim().length > 0) {
+          try {
+            const parsed = JSON.parse(b.content);
+            if (Array.isArray(parsed)) loadedStrokes = parsed;
+            else if (parsed && Array.isArray(parsed.strokes)) loadedStrokes = parsed.strokes;
+          } catch {}
         }
-        if (b.elements && Array.isArray(b.elements)) {
-          setTextElements(b.elements as any);
+        if (loadedStrokes.length === 0) {
+          const local = store.getDrawings(targetId);
+          if (local && local.length > 0) loadedStrokes = local as any;
         }
-        if ((b as any).activeDocument) {
-          setActiveDocument((b as any).activeDocument);
+
+        let loadedElements: BoardTextElement[] = [];
+        if (b.elements && Array.isArray(b.elements) && b.elements.length > 0) {
+          loadedElements = b.elements as any;
+        } else if (b.content && typeof b.content === 'string') {
+          try {
+            const parsed = JSON.parse(b.content);
+            if (parsed && Array.isArray(parsed.elements)) loadedElements = parsed.elements;
+          } catch {}
         }
+
+        setStrokes(loadedStrokes);
+        setTextElements(loadedElements);
+        if ((b as any).activeDocument) setActiveDocument((b as any).activeDocument);
       }
     }
     loadSavedVoiceBoard();
     return () => { isMounted = false; };
-  }, [queryId, boards, user?.id]);
+  }, [queryId, user?.id]);
 
   const handleSave = async () => {
     setSaveStatus('saving');
@@ -182,19 +206,45 @@ function VoiceBoardContent() {
       setLastSavedTime(timeStr);
       setTimeout(() => setSaveStatus('idle'), 4000);
     } catch (err) {
-      console.error('Failed to save Voice Board to Firestore:', err);
+      console.error('Failed to save Voice Board:', err);
       setSaveStatus('error');
       setTimeout(() => setSaveStatus('idle'), 4000);
     }
   };
 
-  // Record undo state snapshot
+  // Auto-save Voice Board session state so speech and strokes are updated in History automatically
+  useEffect(() => {
+    if (strokes.length === 0 && textElements.length === 0 && !activeDocument) return;
+    const timer = setTimeout(() => {
+      const boardPayload: Board = {
+        id: boardId,
+        title: activeDocument ? `Voice Board: ${activeDocument.name}` : boardTitle || 'Voice AI Interactive Board',
+        description: `Speech & canvas session with ${textElements.length} spoken elements and ${strokes.length} strokes.`,
+        createdBy: user?.id || 'guest',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        isShared: false,
+        width: 1920,
+        height: 1080,
+        zoom: 100,
+        isInfiniteCanvas: true,
+        strokes: strokes as any,
+        elements: textElements as any,
+        ...(activeDocument ? {
+          bgFile: { url: activeDocument.dataUrl || (activeDocument as any).url, type: activeDocument.type },
+          activeDocument: activeDocument as any,
+        } : {}),
+      };
+      saveBoard(boardPayload);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [strokes, textElements, activeDocument, boardId, boardTitle, user?.id, saveBoard]);
+
   const saveSnapshot = useCallback(() => {
     setUndoStack((prev) => [...prev, { strokes, textElements }]);
     setRedoStack([]);
   }, [strokes, textElements]);
 
-  // Word-Level Undo Handler (Requirement 3)
   const handleUndo = useCallback(() => {
     setTextElements((prevTextElements) => {
       if (prevTextElements.length === 0) return prevTextElements;
@@ -262,7 +312,6 @@ function VoiceBoardContent() {
     });
   }, [selectedTextId, strokes, isVoiceActive]);
 
-  // Word-Level Redo Handler (Requirement 3)
   const handleRedo = useCallback(() => {
     if (redoWordsStack.length === 0) {
       if (redoStack.length === 0) return;
@@ -306,22 +355,21 @@ function VoiceBoardContent() {
     });
   }, [redoWordsStack, redoStack, strokes, textElements]);
 
-  // Text Size Adjustment Handler (Requirement 4)
   const handleFontSizeChange = useCallback((delta: number) => {
     setFontSize((prevSize) => {
       const newSize = Math.max(12, Math.min(96, prevSize + delta));
-
       setTextElements((prev) => {
         if (prev.length === 0) return prev;
         const targetId = selectedTextId || activeStreamElementIdRef.current || prev[prev.length - 1].id;
         return prev.map((el) => (el.id === targetId ? { ...el, fontSize: newSize } : el));
       });
-
       return newSize;
     });
   }, [selectedTextId]);
 
-  // ── Redraw Canvas ─────────────────────────────────────────────────────────
+
+
+  // Redraw Canvas
   const redrawCanvas = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -352,7 +400,6 @@ function VoiceBoardContent() {
     redrawCanvas();
   }, [redrawCanvas]);
 
-  // Canvas Resize Listener
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -368,7 +415,7 @@ function VoiceBoardContent() {
     return () => window.removeEventListener('resize', resizeCanvas);
   }, [redrawCanvas]);
 
-  // ── Real-Time Incremental Speech Recognition (Deduplicated) ────────────────
+  // Real-Time Speech Recognition
   const stopVoiceRecognition = useCallback(() => {
     if (recognitionRef.current) {
       try {
@@ -396,13 +443,28 @@ function VoiceBoardContent() {
     setInterimText('');
   }, []);
 
-  const startVoiceRecognition = useCallback(() => {
+  const startVoiceRecognition = useCallback(async () => {
     setVoiceError(null);
+
+    // Request microphone access explicitly to prompt browser permission & activate audio hardware
+    try {
+      if (typeof window !== 'undefined' && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach((track) => track.stop());
+      }
+    } catch (err: any) {
+      console.warn('Microphone permission request:', err);
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        setVoiceError('Microphone permission denied. Please allow microphone access in your browser.');
+        return;
+      }
+    }
+
     const SpeechRecognition =
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
-      setVoiceError('Speech recognition is not supported in this browser.');
+      setVoiceError('Speech recognition is not supported in this browser environment.');
       return;
     }
 
@@ -445,7 +507,7 @@ function VoiceBoardContent() {
         }
 
         const currentSpeech = (sessionFinalText + (sessionInterimText ? (sessionFinalText ? ' ' : '') + sessionInterimText : '')).trim();
-        setInterimText(sessionInterimText || sessionFinalText);
+        setInterimText(currentSpeech);
 
         if (!currentSpeech) return;
 
@@ -454,7 +516,6 @@ function VoiceBoardContent() {
           const existingIndex = activeId ? prev.findIndex((el) => el.id === activeId) : -1;
           const baseText = sessionBaseTextRef.current;
 
-          // Apply deduplication logic so final transcript replaces interim text without duplicating
           const fullText = dedupeSpeechText(baseText, currentSpeech);
 
           if (existingIndex !== -1) {
@@ -471,8 +532,8 @@ function VoiceBoardContent() {
             const newText: BoardTextElement = {
               id: newId,
               text: fullText,
-              x: 100 + (count % 4) * 40,
-              y: 120 + Math.floor(count / 4) * 70,
+              x: 120 + (count % 4) * 40,
+              y: 140 + Math.floor(count / 4) * 70,
               fontSize: fontSize || 24,
               color: '#1e293b',
             };
@@ -483,14 +544,19 @@ function VoiceBoardContent() {
       };
 
       recognition.onerror = (event: any) => {
-        if (event.error !== 'no-speech' && event.error !== 'aborted') {
+        console.error('Speech recognition error:', event.error);
+        if (event.error === 'not-allowed') {
+          setVoiceError('Microphone permission denied.');
+          setIsVoiceActive(false);
+          setIsListening(false);
+          setVoiceStatus('Voice OFF');
+        } else if (event.error !== 'no-speech' && event.error !== 'aborted') {
           setVoiceError(`Voice recognition error: ${event.error}`);
         }
       };
 
       recognition.onend = () => {
         if (recognitionRef.current && isVoiceActive) {
-          // Continuous restart: sync base text so new session appends seamlessly without duplicates
           setTextElements((prev) => {
             if (activeStreamElementIdRef.current) {
               const activeEl = prev.find((e) => e.id === activeStreamElementIdRef.current);
@@ -503,10 +569,14 @@ function VoiceBoardContent() {
 
           try {
             recognition.start();
-          } catch {}
+          } catch (err) {
+            console.error('Failed to restart speech recognition:', err);
+            setIsListening(false);
+            setVoiceStatus('Voice ON');
+          }
         } else {
           setIsListening(false);
-          setVoiceStatus('Voice ON');
+          setVoiceStatus('Voice OFF');
         }
       };
 
@@ -515,19 +585,18 @@ function VoiceBoardContent() {
       setIsVoiceActive(true);
       setVoiceStatus('Listening...');
     } catch (err: any) {
+      console.error('Speech recognition start failed:', err);
       setVoiceError(`Could not access microphone: ${err.message}`);
       stopVoiceRecognition();
     }
   }, [fontSize, isVoiceActive, stopVoiceRecognition]);
 
-  // Clean up voice recognition on unmount
   useEffect(() => {
     return () => {
       stopVoiceRecognition();
     };
   }, [stopVoiceRecognition]);
 
-  // Toggle Voice Button Click Handler
   const toggleVoice = useCallback(() => {
     if (isVoiceActive) {
       stopVoiceRecognition();
@@ -536,7 +605,6 @@ function VoiceBoardContent() {
     }
   }, [isVoiceActive, startVoiceRecognition, stopVoiceRecognition]);
 
-  // Keyboard Shortcut for Voice (Alt+V or Ctrl+Shift+V)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const isAltV = e.altKey && e.code === 'KeyV';
@@ -558,7 +626,6 @@ function VoiceBoardContent() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [toggleVoice]);
 
-  // ── Drawing Event Handlers ────────────────────────────────────────────────
   const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (tool === 'pointer') return;
     const canvas = canvasRef.current;
@@ -582,7 +649,6 @@ function VoiceBoardContent() {
 
     currentStrokeRef.current.push({ x, y });
 
-    // Live preview stroke
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     const pts = currentStrokeRef.current;
@@ -617,32 +683,8 @@ function VoiceBoardContent() {
     currentStrokeRef.current = [];
   };
 
-  // Erase Text Element Handler (Requirement 5)
-  const handleDeleteTextElement = useCallback((id: string) => {
-    saveSnapshot();
-    if (activeStreamElementIdRef.current === id) {
-      activeStreamElementIdRef.current = null;
-      sessionBaseTextRef.current = '';
-    }
-    setTextElements((prev) => prev.filter((t) => t.id !== id));
-    if (selectedTextId === id) setSelectedTextId(null);
-  }, [saveSnapshot, selectedTextId]);
-
-  // Clear Whiteboard
-  const handleClear = () => {
-    if (confirm('Clear the entire whiteboard?')) {
-      saveSnapshot();
-      setStrokes([]);
-      setTextElements([]);
-      setActiveDocument(null);
-      activeStreamElementIdRef.current = null;
-      sessionBaseTextRef.current = '';
-    }
-  };
-
   return (
     <div className="flex flex-col h-screen bg-[var(--bg-primary)] overflow-hidden">
-      {/* Board Header with Visible Menu Button & Save Button */}
       <BoardHeader
         title="Voice Board"
         subtitle="English Speech to Whiteboard Text"
@@ -650,25 +692,23 @@ function VoiceBoardContent() {
         saveStatus={saveStatus}
         lastSavedTime={lastSavedTime}
       >
-        {/* Voice ON / OFF Control */}
-        <div className="flex items-center gap-2 p-1 bg-[var(--bg-tertiary)] border border-[var(--border-primary)] rounded-xl">
+        <div className="flex items-center gap-1.5 p-1 bg-[var(--bg-tertiary)] border border-[var(--border-primary)] rounded-lg">
           <button
             onClick={toggleVoice}
             title="Toggle Voice Input (Shortcut: Alt+V)"
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all cursor-pointer ${
               isVoiceActive
                 ? 'bg-red-600 hover:bg-red-700 text-white shadow-xs'
                 : 'bg-[var(--color-primary-500)] hover:bg-[var(--color-primary-600)] text-white shadow-xs'
             }`}
           >
-            {isVoiceActive ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
+            {isVoiceActive ? <MicOff className="w-3 h-3" /> : <Mic className="w-3 h-3" />}
             <span>{isVoiceActive ? 'Voice OFF' : 'Voice ON'}</span>
-            <span className="text-[10px] opacity-75 font-mono px-1 bg-black/20 rounded">Alt+V</span>
+            <span className="text-[9px] opacity-75 font-mono px-1 bg-black/20 rounded">Alt+V</span>
           </button>
 
-          {/* Status Display Badge */}
           <div
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold ${
+            className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium ${
               voiceStatus === 'Listening...'
                 ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 animate-pulse'
                 : isVoiceActive
@@ -677,201 +717,118 @@ function VoiceBoardContent() {
             }`}
           >
             {voiceStatus === 'Listening...' && (
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
             )}
             <span>{voiceStatus}</span>
           </div>
         </div>
       </BoardHeader>
 
-      {/* Main Whiteboard Workspace */}
       <div className="flex-1 relative bg-white dark:bg-slate-950 overflow-hidden cursor-crosshair">
-        {/* Background Document / Image Card */}
-        {activeDocument && (
-          <div className="absolute inset-0 flex items-center justify-center p-8 pointer-events-none z-0">
-            <div className="max-w-4xl max-h-[85vh] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden p-6 text-slate-800 dark:text-slate-100 font-sans">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800 mb-4">
-                <span className="text-xs font-bold text-indigo-500 uppercase tracking-widest flex items-center gap-2">
-                  <FileText className="w-4 h-4" /> {activeDocument.name}
-                </span>
-                <span className="text-[10px] font-mono text-slate-400">Annotation Mode</span>
-              </div>
-              {activeDocument.dataUrl ? (
-                <Image
-                  src={activeDocument.dataUrl}
-                  alt={activeDocument.name}
-                  width={1200}
-                  height={800}
-                  className="max-h-[65vh] w-auto h-auto object-contain rounded-lg mx-auto"
-                  unoptimized
-                />
+        {/* Real-time Spoken Speech Feedback Overlay Banner */}
+        {(isVoiceActive || interimText || voiceError) && (
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-slate-900/90 dark:bg-slate-900/95 border border-slate-700 backdrop-blur-md shadow-xl max-w-xl w-full mx-4 transition-all">
+            <div className={`w-3 h-3 rounded-full shrink-0 ${isListening ? 'bg-emerald-500 animate-ping' : 'bg-amber-500'}`} />
+            
+            <div className="flex-1 truncate">
+              {voiceError ? (
+                <span className="text-xs font-semibold text-red-400">{voiceError}</span>
+              ) : interimText ? (
+                <p className="text-xs font-medium text-slate-100 truncate">
+                  <span className="text-indigo-400 font-bold uppercase tracking-wider text-[10px] mr-2">Speaking:</span>
+                  "{interimText}"
+                </p>
               ) : (
-                <div className="prose dark:prose-invert text-sm max-h-[60vh] overflow-y-auto p-4 bg-slate-50 dark:bg-slate-950 rounded-xl">
-                  <pre className="whitespace-pre-wrap font-sans">{activeDocument.textContent}</pre>
-                </div>
+                <p className="text-xs font-medium text-slate-400 animate-pulse">
+                  Start speaking into your microphone... (Words will convert onto the board in real-time)
+                </p>
               )}
             </div>
+
+            <button
+              onClick={toggleVoice}
+              className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 transition-colors shrink-0 cursor-pointer"
+            >
+              {isVoiceActive ? 'Stop' : 'Start'}
+            </button>
           </div>
         )}
-
-        {/* Transparent Canvas Annotation Layer */}
         <canvas
           ref={canvasRef}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
+          onPointerLeave={handlePointerUp}
           className="absolute inset-0 z-10 touch-none"
         />
 
-        {/* Placed Spoken English Text Elements Overlay */}
-        <div className="absolute inset-0 z-20 pointer-events-none">
-          {textElements.map((el) => (
-            <div key={el.id} className="pointer-events-auto">
-              <TextElementOverlay
-                element={el}
-                isSelected={selectedTextId === el.id}
-                isEraserActive={tool === 'eraser'}
-                onSelect={(id) => setSelectedTextId(id)}
-                onUpdate={(updated) => {
-                  setTextElements((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
-                  if (activeStreamElementIdRef.current === updated.id) {
-                    sessionBaseTextRef.current = updated.text.trim();
-                  }
-                }}
-                onDelete={handleDeleteTextElement}
-                onUndo={handleUndo}
-                onRedo={handleRedo}
-                canUndo={undoStack.length > 0 || textElements.some((t) => t.text.trim().length > 0)}
-                canRedo={redoStack.length > 0 || redoWordsStack.length > 0}
-              />
-            </div>
+        {textElements.map((el) => (
+          <TextElementOverlay
+            key={el.id}
+            element={el}
+            isSelected={selectedTextId === el.id}
+            onSelect={setSelectedTextId}
+            onUpdate={(updated) => setTextElements((prev) => prev.map((t) => (t.id === updated.id ? updated : t)))}
+            onDelete={(id) => setTextElements((prev) => prev.filter((t) => t.id !== id))}
+          />
+        ))}
+
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 p-2 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-primary)] shadow-dock">
+          {[
+            { id: 'pen', icon: Pen, label: 'Pen' },
+            { id: 'eraser', icon: Eraser, label: 'Eraser' },
+            { id: 'pointer', icon: Move, label: 'Move / Select' },
+          ].map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setTool(t.id as ToolMode)}
+              className={`p-2.5 rounded-xl transition-all cursor-pointer ${
+                tool === t.id ? 'bg-[var(--color-primary-500)] text-white shadow-xs' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
+              }`}
+              title={t.label}
+            >
+              <t.icon className="w-4 h-4" />
+            </button>
           ))}
-        </div>
 
-        {/* Live Listening Interim Speech Feedback Overlay */}
-        {isListening && (
-          <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-40 bg-slate-900/90 text-white px-5 py-3 rounded-2xl shadow-2xl backdrop-blur-md border border-slate-700 flex items-center gap-3 animate-fade-in max-w-lg">
-            <div className="w-3 h-3 rounded-full bg-red-500 animate-ping shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-[10px] uppercase tracking-widest text-slate-400 font-mono">Listening to English Speech...</p>
-              <p className="text-sm font-semibold truncate text-emerald-300">
-                {interimText || 'Speak into microphone... Speech converts to text on the board.'}
-              </p>
+          <div className="w-px h-6 bg-[var(--border-primary)]" />
+
+          {tool === 'pen' && (
+            <div className="flex items-center gap-1.5 px-1">
+              {PEN_COLORS.map((c) => (
+                <button
+                  key={c.hex}
+                  onClick={() => setColor(c.hex)}
+                  className={`w-5 h-5 rounded-full border-2 transition-transform cursor-pointer ${
+                    color === c.hex ? 'scale-125 border-white shadow-xs' : 'border-transparent hover:scale-110'
+                  }`}
+                  style={{ backgroundColor: c.hex }}
+                  title={c.name}
+                />
+              ))}
             </div>
-          </div>
-        )}
-
-        {/* Error Alert */}
-        {voiceError && (
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-40 bg-red-500 text-white px-4 py-2 rounded-xl shadow-xl flex items-center gap-2 text-xs font-bold animate-bounce">
-            <AlertCircle className="w-4 h-4" />
-            <span>{voiceError}</span>
-          </div>
-        )}
-
-        {/* Floating Whiteboard Control Toolbar */}
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 bg-[var(--bg-elevated)]/90 backdrop-blur-xl border border-[var(--border-primary)] p-2 rounded-2xl shadow-2xl flex items-center gap-2">
-          {/* Tool Modes */}
-          <div className="flex items-center gap-1 bg-[var(--bg-primary)] p-1 rounded-xl">
-            <button
-              onClick={() => setTool('pen')}
-              className={`p-2 rounded-lg transition-colors cursor-pointer ${
-                tool === 'pen' ? 'bg-[var(--color-primary-500)] text-white shadow-sm' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
-              }`}
-              title="Pen Tool"
-            >
-              <Pen className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setTool('eraser')}
-              className={`p-2 rounded-lg transition-colors cursor-pointer ${
-                tool === 'eraser' ? 'bg-[var(--color-primary-500)] text-white shadow-sm' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
-              }`}
-              title="Eraser Tool (Click text element to erase)"
-            >
-              <Eraser className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setTool('pointer')}
-              className={`p-2 rounded-lg transition-colors cursor-pointer ${
-                tool === 'pointer' ? 'bg-[var(--color-primary-500)] text-white shadow-sm' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
-              }`}
-              title="Select / Move Tool"
-            >
-              <Move className="w-4 h-4" />
-            </button>
-          </div>
+          )}
 
           <div className="w-px h-6 bg-[var(--border-primary)]" />
 
-          {/* Text Size Controls (Requirement 4) */}
-          <div className="flex items-center gap-1 bg-[var(--bg-primary)] p-1 rounded-xl" title="Adjust Text Size">
-            <button
-              onClick={() => handleFontSizeChange(-2)}
-              className="p-1.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] rounded-lg transition-colors cursor-pointer"
-              title="Decrease Text Size"
-            >
-              <Minus className="w-3.5 h-3.5" />
-            </button>
-            <span className="text-xs font-mono font-bold px-1 text-indigo-600 dark:text-indigo-400 min-w-[32px] text-center select-none">
-              {fontSize}px
-            </span>
-            <button
-              onClick={() => handleFontSizeChange(2)}
-              className="p-1.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] rounded-lg transition-colors cursor-pointer"
-              title="Increase Text Size"
-            >
-              <Plus className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          <div className="w-px h-6 bg-[var(--border-primary)]" />
-
-          {/* Color Picker */}
-          <div className="flex items-center gap-1 px-1">
-            {PEN_COLORS.map((c) => (
-              <button
-                key={c.hex}
-                onClick={() => setColor(c.hex)}
-                className={`w-6 h-6 rounded-full border-2 transition-transform cursor-pointer ${
-                  color === c.hex ? 'scale-125 border-indigo-500' : 'border-transparent hover:scale-110'
-                }`}
-                style={{ backgroundColor: c.hex }}
-                title={c.name}
-              />
-            ))}
-          </div>
-
-          <div className="w-px h-6 bg-[var(--border-primary)]" />
-
-          {/* Undo / Redo */}
-          <button
-            onClick={handleUndo}
-            disabled={undoStack.length === 0 && !textElements.some((t) => t.text.trim().length > 0)}
-            className="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] disabled:opacity-40 hover:bg-[var(--bg-tertiary)] rounded-lg transition-colors cursor-pointer"
-            title="Undo Last Spoken Word"
-          >
+          <button onClick={handleUndo} disabled={undoStack.length === 0} className="p-2.5 rounded-xl text-[var(--text-secondary)] disabled:opacity-30 hover:bg-[var(--bg-tertiary)] cursor-pointer" title="Undo Word">
             <Undo2 className="w-4 h-4" />
           </button>
-          <button
-            onClick={handleRedo}
-            disabled={redoStack.length === 0 && redoWordsStack.length === 0}
-            className="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] disabled:opacity-40 hover:bg-[var(--bg-tertiary)] rounded-lg transition-colors cursor-pointer"
-            title="Redo"
-          >
+          <button onClick={handleRedo} disabled={redoStack.length === 0 && redoWordsStack.length === 0} className="p-2.5 rounded-xl text-[var(--text-secondary)] disabled:opacity-30 hover:bg-[var(--bg-tertiary)] cursor-pointer" title="Redo Word">
             <Redo2 className="w-4 h-4" />
           </button>
 
           <div className="w-px h-6 bg-[var(--border-primary)]" />
 
-          {/* Clear Board */}
-          <button
-            onClick={handleClear}
-            className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors cursor-pointer"
-            title="Clear Whiteboard"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button onClick={() => handleFontSizeChange(-2)} className="p-2 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] cursor-pointer" title="Decrease font size">
+              <Minus className="w-3.5 h-3.5" />
+            </button>
+            <span className="text-xs font-bold text-[var(--text-primary)] px-1">{fontSize}px</span>
+            <button onClick={() => handleFontSizeChange(2)} className="p-2 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] cursor-pointer" title="Increase font size">
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       </div>
     </div>

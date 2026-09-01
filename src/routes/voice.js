@@ -196,6 +196,26 @@ router.get('/intents', (req, res) => {
   });
 });
 
+router.get('/model-status', (req, res) => {
+  const localSttEngine = require('../services/localSttEngine');
+  res.json({
+    success: true,
+    model: localSttEngine.getModelStatus(),
+  });
+});
+
+router.post('/train', optionalAuth, asyncHandler(async (req, res) => {
+  const { phrase, category, phonemes, keywords } = req.body;
+  if (!phrase) {
+    return res.status(400).json({ success: false, error: 'Missing required field: phrase' });
+  }
+
+  const localSttEngine = require('../services/localSttEngine');
+  const result = localSttEngine.trainModel({ phrase, category, phonemes, keywords });
+
+  res.json(result);
+}));
+
 router.post('/cache/clear', authenticate, asyncHandler(async (req, res) => {
   const voiceService = require('../services/voiceService');
   voiceService.clearCache();

@@ -4,7 +4,6 @@ import { getApp, getApps, initializeApp } from "firebase/app";
 import { initializeFirestore, enableIndexedDbPersistence } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { getStorage } from "firebase/storage";
-import { getDatabase } from "firebase/database";
 
 import { getFirebaseApiKey } from "./keyRotation";
 
@@ -15,7 +14,6 @@ const firebaseConfig = {
     storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
     messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
     appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-    databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL || `https://${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'eduboard-ai'}-default-rtdb.firebaseio.com`,
 };
 
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
@@ -41,6 +39,5 @@ if (typeof window !== "undefined") {
 }
 
 export const storage = getStorage(app);
-export const rtdb = getDatabase(app);
-export const realtimeDb = rtdb;
 export default app;
+

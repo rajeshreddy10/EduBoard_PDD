@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { X, LayoutDashboard, History, Bell, Mic, Grid3X3, NotebookPen, User, Settings, Palette, HelpCircle } from 'lucide-react';
+import { X, LayoutDashboard, History, Bell, Mic, Grid3X3, NotebookPen, User, Settings, Palette, HelpCircle, Sparkles } from 'lucide-react';
 import { Logo } from '@/components/branding/Logo';
 
 interface NavigationDrawerProps {
@@ -40,6 +40,7 @@ const NAV_SECTIONS = [
     title: 'SUPPORT',
     items: [
       { label: 'Help Center', href: '/help', icon: HelpCircle },
+      { label: 'Onboarding Tour', href: '/onboarding', icon: Sparkles },
     ],
   },
 ];

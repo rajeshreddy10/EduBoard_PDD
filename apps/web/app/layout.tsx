@@ -4,8 +4,6 @@ import { BoardProvider } from '@/lib/BoardContext';
 import { ThemeProvider } from '@/lib/ThemeContext';
 import './globals.css';
 
-export const dynamic = 'force-dynamic';
-
 export const metadata: Metadata = {
   title: 'EduBoard',
   description: 'AI-powered smart classroom platform with gesture control, AI teaching tools, and real-time collaboration.',

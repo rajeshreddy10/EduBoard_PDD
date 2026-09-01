@@ -41,19 +41,22 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     if (!user?.id) return;
     async function syncThemeFromFirestore() {
       try {
+        console.log('[Firebase Firestore] [Menu Option: Theme Studio] Loading user theme preference from Firestore for user:', user!.id);
         const profile = await userProfileService.getProfile(user!.id);
         if (profile) {
           if ((profile as any).theme) {
+            console.log('[Firebase Firestore] [Menu Option: Theme Studio] Applied user theme:', (profile as any).theme);
             setThemeState((profile as any).theme);
             applyTheme((profile as any).theme);
           }
           if ((profile as any).accentColor) {
+            console.log('[Firebase Firestore] [Menu Option: Theme Studio] Applied user accent color:', (profile as any).accentColor);
             setAccentColorState((profile as any).accentColor);
             applyAccent((profile as any).accentColor);
           }
         }
       } catch (err) {
-        console.warn('Failed to load user theme from Firestore:', err);
+        console.warn('[Firebase Firestore] [Menu Option: Theme Studio] Failed to load user theme from Firestore:', err);
       }
     }
     syncThemeFromFirestore();
@@ -79,6 +82,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setThemeState(newTheme);
     applyTheme(newTheme);
     if (user?.id) {
+      console.log('[Firebase Firestore] [Menu Option: Theme Studio] Saving updated theme to Firestore for user:', user.id, newTheme);
       userProfileService.updateProfile(user.id, { theme: newTheme } as any).catch(console.error);
     }
   };
@@ -87,6 +91,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setAccentColorState(color);
     applyAccent(color);
     if (user?.id) {
+      console.log('[Firebase Firestore] [Menu Option: Theme Studio] Saving updated accent color to Firestore for user:', user.id, color);
       userProfileService.updateProfile(user.id, { accentColor: color } as any).catch(console.error);
     }
   };

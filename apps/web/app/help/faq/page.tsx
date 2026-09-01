@@ -7,17 +7,34 @@ import { ArrowLeft, ChevronDown, ChevronUp, Search, ThumbsUp, ThumbsDown } from 
 interface FAQItem { id: string; q: string; a: string; category: string; helpful?: number; }
 
 const FAQS: FAQItem[] = [
-  { id: '1', category: 'DocCanvas', q: 'What is DocCanvas Studio?', a: 'DocCanvas Studio is EduBoard\'s document annotation workspace. You can open any supported document (PDF, Word, PowerPoint, Images, Text) or draw directly on a blank canvas using Pen, Text Typing, Erase, Highlight, Laser Pointer, and Magnify tools.', helpful: 142 },
-  { id: '2', category: 'DocCanvas', q: 'Can I draw on DocCanvas Studio without opening a file?', a: 'Yes! DocCanvas Studio opens in blank canvas mode by default, allowing you to draw freehand, add typed text, highlight, and save immediately without needing to open a file first.', helpful: 118 },
-  { id: '3', category: 'DocCanvas', q: 'How do I switch between writing and scrolling a document?', a: 'When a file is opened in DocCanvas, use the Write / Scroll mode toggle in the Document Viewer header bar. Switch to "Scroll" mode to scroll pages or navigate slides, and switch back to "Write" mode to annotate on top of the content.', helpful: 95 },
-  { id: '4', category: 'DrawSpace', q: 'What is DrawSpace Canvas?', a: 'DrawSpace Canvas is an interactive whiteboard for freehand drawing, text editing, and presentation equipped with a 30/70 side-by-side Reference Drawer, Waypoint camera glides, and Teacher Notes overlay.', helpful: 130 },
-  { id: '5', category: 'DrawSpace', q: 'How do Waypoint camera glides work?', a: 'Position your canvas view using pan/zoom, then click "Add Waypoint" in the header bar to save your camera coordinates. Clicking any saved waypoint chip smoothly glides your viewport back to that view position.', helpful: 88 },
-  { id: '6', category: 'DrawSpace', q: 'How do I open the Reference Drawer?', a: 'Click the "Reference" button in the board header to slide open a 30/70 side-by-side panel. You can load reference files or lesson materials on the left while keeping your main whiteboard workspace active on the right.', helpful: 104 },
-  { id: '7', category: 'Voice Board', q: 'How does Voice Board work?', a: 'Click "Voice ON" (or press Alt+V) and speak into your microphone. Spoken words are transcribed into text elements placed directly on the canvas, with real-time deduplication to prevent sentence repetition.', helpful: 165 },
-  { id: '8', category: 'Voice Board', q: 'How do I adjust font size or erase spoken text?', a: 'Select any text element on the canvas to increase or decrease font size (- / +), or click a text element while the Eraser tool is active to delete it.', helpful: 76 },
-  { id: '9', category: 'Saving', q: 'How do I save my boards?', a: 'Click the "Save" button in the board header. All drawings, text elements, and opened document annotations are saved to your account and synced to your cloud history.', helpful: 184 },
-  { id: '10', category: 'Saving', q: 'Where can I access past saved sessions?', a: 'Navigate to "Saved History" from the dashboard menu to view, open, export, or manage all saved board sessions.', helpful: 112 },
-  { id: '11', category: 'General', q: 'What file formats can I import?', a: 'EduBoard supports PDF (.pdf), PowerPoint (.ppt, .pptx), Word (.doc, .docx), plain text (.txt), and images (.png, .jpg, .jpeg).', helpful: 150 },
+  // Dashboard & History
+  { id: '1', category: 'Dashboard & History', q: 'What is the EduBoard Dashboard?', a: 'The Dashboard is your main control hub. It provides an overview of your recent whiteboards, quick board creation launchers, class stats, and direct access to your saved cloud history.', helpful: 165 },
+  { id: '2', category: 'Dashboard & History', q: 'How do I access and resume past saved sessions?', a: 'Click "Saved History" or "Boards" in the main menu to view all your saved sessions. You can resume editing, export to PDF/PNG, or share any past session with students.', helpful: 142 },
+
+  // Smart Board (DrawSpace)
+  { id: '3', category: 'Smart Board', q: 'What tools are available in Smart Board (DrawSpace)?', a: 'Smart Board includes freehand Pen, Eraser, Vanishing Laser Pointer, Focus Spotlight, Color Swatches, Text Typing, Grid Background styles, Progressive Reveal steps, 30/70 Reference Drawer, and Export options.', helpful: 189 },
+  { id: '4', category: 'Smart Board', q: 'How do I open and use the Reference Drawer?', a: 'Click the small "Reference" button in the board header to slide open a 30/70 side-by-side drawer. You can load lesson notes or reference materials on the left while keeping your main canvas active on the right.', helpful: 128 },
+  { id: '5', category: 'Smart Board', q: 'How do I export my whiteboard drawings?', a: 'Click the Save or Export button in the board header to export your canvas session as a high-resolution PDF document, PNG image, or JSON data file.', helpful: 110 },
+
+  // Gesture Control (DocCanvas)
+  { id: '6', category: 'Gesture Control', q: 'How does Gesture Controlled Smart Board work?', a: 'Launch Gesture Board from the main menu. Using MediaPipe & TensorFlow webcam tracking, you can draw with your index finger, pan with an open palm, erase with a pinch gesture, clear with a fist, or select text with a peace sign.', helpful: 195 },
+  { id: '7', category: 'Gesture Control', q: 'What document formats can I annotate in DocCanvas?', a: 'DocCanvas supports PDF (.pdf), Word (.doc, .docx), PowerPoint (.ppt, .pptx), Text (.txt), and Images (.png, .jpg). You can switch between "Write" mode to annotate and "Scroll" mode to flip pages.', helpful: 134 },
+
+  // Voice Control & AI
+  { id: '8', category: 'Voice & AI', q: 'How does Voice Board speech transcription work?', a: 'Click the "Voice ON" button (or press Alt+V) and speak into your microphone. Your spoken words are automatically transcribed into canvas text elements with real-time sentence deduplication.', helpful: 172 },
+  { id: '9', category: 'Voice & AI', q: 'How do I generate AI Quizzes and Summaries?', a: 'Click the AI action button in the board header or voice toolbar to generate instant quizzes, lecture summaries, or ask the AI assistant questions based on your lesson content.', helpful: 156 },
+
+  // Classrooms & Collaboration
+  { id: '10', category: 'Classrooms', q: 'How do I host or join a live classroom session?', a: 'Navigate to "Classrooms" in the main menu to create or join a session. Features include real-time stroke synchronization, student chat, hand raising, live poll voting, and attendance tracking.', helpful: 180 },
+  { id: '11', category: 'Classrooms', q: 'How does real-time collaboration work?', a: 'Socket.IO powers instant sub-second stroke and cursor synchronization across all connected web and mobile participants in a classroom.', helpful: 125 },
+
+  // Analytics & Security
+  { id: '12', category: 'Analytics & Profile', q: 'What statistics can I track in Analytics?', a: 'The Analytics menu section displays student engagement metrics, class participation charts, drawing time stats, and exportable reports.', helpful: 98 },
+  { id: '13', category: 'Analytics & Profile', q: 'How do I manage profile security and password reset?', a: 'Go to Profile -> Security in the main menu to change your password, view active login sessions, manage security keys, or update your profile avatar.', helpful: 115 },
+
+  // Settings & Mobile LAN
+  { id: '14', category: 'Settings & Mobile', q: 'How do I connect my mobile phone to my laptop app?', a: 'Connect both your mobile phone and laptop to the same Wi-Fi network. Open Chrome/Safari on your phone or launch the EduBoard Android App and navigate to http://<laptop-ip>:3000 (e.g. http://10.101.120.243:3000).', helpful: 210 },
+  { id: '15', category: 'Settings & Mobile', q: 'How do I switch themes or languages?', a: 'Go to Settings in the main menu to toggle between Dark/Light modes or select your preferred display language.', helpful: 105 },
 ];
 
 const CATEGORIES = ['All', ...Array.from(new Set(FAQS.map(f => f.category)))];

@@ -98,11 +98,9 @@ export function logout() {
 }
 
 const SEED_BOARDS: Board[] = [
-  { id: 'b1', title: 'Q3 Architecture Plan', description: 'System architecture design for the new platform', createdAt: '2025-05-01T10:00:00Z', updatedAt: '2025-05-07T02:15:00Z', createdBy: 'u1', isShared: true, sharedWith: ['jane@co.com'], width: 1920, height: 1080, zoom: 100, isInfiniteCanvas: true },
-  { id: 'b2', title: 'Gesture UI Specs', description: 'Gesture interface specifications and wireframes', createdAt: '2025-05-02T09:00:00Z', updatedAt: '2025-05-07T00:30:00Z', createdBy: 'u1', isShared: false, width: 1920, height: 1080, zoom: 100, isInfiniteCanvas: false },
-  { id: 'b3', title: 'Physics Lesson - Laws of Motion', description: 'Interactive physics lesson with diagrams', createdAt: '2025-04-28T14:00:00Z', updatedAt: '2025-05-06T10:00:00Z', createdBy: 'u1', isShared: true, sharedWith: ['students@class.com'], width: 3840, height: 2160, zoom: 75, isInfiniteCanvas: true },
-  { id: 'b4', title: 'Math - Calculus Basics', description: 'Introduction to derivatives and integrals', createdAt: '2025-04-25T08:00:00Z', updatedAt: '2025-05-05T16:00:00Z', createdBy: 'u1', isShared: false, width: 1920, height: 1080, zoom: 100, isInfiniteCanvas: false },
-  { id: 'b5', title: 'Chemistry - Periodic Table', description: 'Interactive periodic table study guide', createdAt: '2025-04-20T11:00:00Z', updatedAt: '2025-05-04T12:00:00Z', createdBy: 'u1', isShared: true, width: 2560, height: 1440, zoom: 80, isInfiniteCanvas: true },
+  { id: 'drawspace_demo', title: 'Normal Board — DrawSpace Studio', description: 'Interactive whiteboard session with pen, drawing strokes, and text elements', createdAt: '2025-05-01T10:00:00Z', updatedAt: '2025-05-07T02:15:00Z', createdBy: 'u1', isShared: true, sharedWith: ['jane@co.com'], width: 1920, height: 1080, zoom: 100, isInfiniteCanvas: true },
+  { id: 'voiceboard_demo', title: 'Voice Board — Speech to Text Studio', description: 'Speech-driven interactive canvas session with real-time speech recognition', createdAt: '2025-05-02T09:00:00Z', updatedAt: '2025-05-07T00:30:00Z', createdBy: 'u1', isShared: false, width: 1920, height: 1080, zoom: 100, isInfiniteCanvas: false },
+  { id: 'doccanvas_demo', title: 'DocCanvas — Document Annotation Studio', description: 'Document & PDF annotation workspace session with visual drawing overlay', createdAt: '2025-04-28T14:00:00Z', updatedAt: '2025-05-06T10:00:00Z', createdBy: 'u1', isShared: true, sharedWith: ['students@class.com'], width: 3840, height: 2160, zoom: 75, isInfiniteCanvas: true },
 ];
 
 export function getBoards(): Board[] { return get(KEYS.boards, SEED_BOARDS); }

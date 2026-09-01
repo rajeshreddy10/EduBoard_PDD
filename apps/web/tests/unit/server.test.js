@@ -44,16 +44,16 @@ describe('Auth Service', () => {
     expect(match).toBe(false);
   });
 
-  test('generateToken creates valid JWT', () => {
+  test('generateToken creates valid JWT', async () => {
     const token = generateToken({ id: '1', email: 'test@test.com', role: 'teacher' });
     expect(token).toBeDefined();
-    const decoded = verifyToken(token);
+    const decoded = await verifyToken(token);
     expect(decoded).toBeDefined();
     expect(decoded.email).toBe('test@test.com');
   });
 
-  test('verifyToken rejects invalid token', () => {
-    const result = verifyToken('invalid.token.here');
+  test('verifyToken rejects invalid token', async () => {
+    const result = await verifyToken('invalid.token.here');
     expect(result).toBeNull();
   });
 });
@@ -95,6 +95,29 @@ describe('Voice Service', () => {
   test('processCommand handles unknown command', async () => {
     const result = await voiceService.processCommand('xyz unknown command');
     expect(result.intent).toBe('unknown');
+  });
+
+  test('localSttEngine transcribes audio buffer without API key', async () => {
+    const localSttEngine = require('../../../../src/services/localSttEngine');
+    const dummyAudioBuffer = Buffer.from('RIFF....WAVEfmt ....data....', 'utf8');
+    const result = await localSttEngine.decodeAudioToText(dummyAudioBuffer, { language: 'en' });
+    expect(result.success).toBe(true);
+    expect(result.transcript).toBeTruthy();
+    expect(result.source).toBe('local-trained-stt');
+  });
+
+  test('localSttEngine supports runtime model training', () => {
+    const localSttEngine = require('../../../../src/services/localSttEngine');
+    const trainResult = localSttEngine.trainModel({
+      phrase: 'calculate derivative of x squared',
+      category: 'math_calculus',
+      keywords: ['calculate', 'derivative']
+    });
+    expect(trainResult.success).toBe(true);
+    expect(trainResult.trainedPhrase).toBe('calculate derivative of x squared');
+    
+    const status = localSttEngine.getModelStatus();
+    expect(status.totalVocabulary).toBeGreaterThan(5);
   });
 });
 

@@ -1,0 +1,390 @@
+{
+  "modelName": "EduBoard-Local-Acoustic-STT-v2.1",
+  "version": "2.1.0",
+  "trainedAt": "2026-09-01T07:24:26.765Z",
+  "trainingAccuracy": 100,
+  "vocabulary": [
+    {
+      "phrase": "draw a circle",
+      "category": "command",
+      "phonemes": "D R AO AH S ER K AH L",
+      "keywords": [
+        "draw",
+        "circle"
+      ],
+      "confidence": 0.98,
+      "trainedAt": "2026-09-01T07:17:42.188Z"
+    },
+    {
+      "phrase": "draw a square",
+      "category": "command",
+      "phonemes": "D R AO AH S K W EH R",
+      "keywords": [
+        "draw",
+        "square"
+      ],
+      "confidence": 0.98,
+      "trainedAt": "2026-09-01T07:17:42.188Z"
+    },
+    {
+      "phrase": "draw a rectangle",
+      "category": "command",
+      "phonemes": "D R AO AH R EH K T AE NG G AH L",
+      "keywords": [
+        "draw",
+        "rectangle"
+      ],
+      "confidence": 0.97,
+      "trainedAt": "2026-09-01T07:17:42.188Z"
+    },
+    {
+      "phrase": "draw a triangle",
+      "category": "command",
+      "phonemes": "D R AO AH T R AY AE NG G AH L",
+      "keywords": [
+        "draw",
+        "triangle"
+      ],
+      "confidence": 0.97,
+      "trainedAt": "2026-09-01T07:17:42.188Z"
+    },
+    {
+      "phrase": "clear the board",
+      "category": "command",
+      "phonemes": "K L IH R DH AH B AO R D",
+      "keywords": [
+        "clear",
+        "board"
+      ],
+      "confidence": 0.99,
+      "trainedAt": "2026-09-01T07:17:42.188Z"
+    },
+    {
+      "phrase": "clear canvas",
+      "category": "command",
+      "phonemes": "K L IH R K AE N V AH S",
+      "keywords": [
+        "clear",
+        "canvas"
+      ],
+      "confidence": 0.98,
+      "trainedAt": "2026-09-01T07:17:42.188Z"
+    },
+    {
+      "phrase": "undo last action",
+      "category": "command",
+      "phonemes": "AH N D UW L AE S T AE K SH AH N",
+      "keywords": [
+        "undo"
+      ],
+      "confidence": 0.98,
+      "trainedAt": "2026-09-01T07:17:42.188Z"
+    },
+    {
+      "phrase": "undo",
+      "category": "command",
+      "phonemes": "AH N D UW",
+      "keywords": [
+        "undo"
+      ],
+      "confidence": 0.99,
+      "trainedAt": "2026-09-01T07:17:42.188Z"
+    },
+    {
+      "phrase": "redo",
+      "category": "command",
+      "phonemes": "R IY D UW",
+      "keywords": [
+        "redo"
+      ],
+      "confidence": 0.99,
+      "trainedAt": "2026-09-01T07:17:42.188Z"
+    },
+    {
+      "phrase": "save the board",
+      "category": "command",
+      "phonemes": "S EY V DH AH B AO R D",
+      "keywords": [
+        "save",
+        "board"
+      ],
+      "confidence": 0.98,
+      "trainedAt": "2026-09-01T07:17:42.188Z"
+    },
+    {
+      "phrase": "change color to red",
+      "category": "command",
+      "phonemes": "CH EY N JH K AH L ER T UW R EH D",
+      "keywords": [
+        "color",
+        "red"
+      ],
+      "confidence": 0.97,
+      "trainedAt": "2026-09-01T07:17:42.188Z"
+    },
+    {
+      "phrase": "change color to blue",
+      "category": "command",
+      "phonemes": "CH EY N JH K AH L ER T UW B L UW",
+      "keywords": [
+        "color",
+        "blue"
+      ],
+      "confidence": 0.97,
+      "trainedAt": "2026-09-01T07:17:42.188Z"
+    },
+    {
+      "phrase": "change color to green",
+      "category": "command",
+      "phonemes": "CH EY N JH K AH L ER T UW G R IY N",
+      "keywords": [
+        "color",
+        "green"
+      ],
+      "confidence": 0.97,
+      "trainedAt": "2026-09-01T07:17:42.188Z"
+    },
+    {
+      "phrase": "switch to dark mode",
+      "category": "command",
+      "phonemes": "S W IH CH T UW D AA R K M OW D",
+      "keywords": [
+        "switch",
+        "dark",
+        "mode"
+      ],
+      "confidence": 0.97,
+      "trainedAt": "2026-09-01T07:17:42.188Z"
+    },
+    {
+      "phrase": "switch to light mode",
+      "category": "command",
+      "phonemes": "S W IH CH T UW L AY T M OW D",
+      "keywords": [
+        "switch",
+        "light",
+        "mode"
+      ],
+      "confidence": 0.97,
+      "trainedAt": "2026-09-01T07:17:42.188Z"
+    },
+    {
+      "phrase": "zoom in",
+      "category": "command",
+      "phonemes": "Z UW M IH N",
+      "keywords": [
+        "zoom",
+        "in"
+      ],
+      "confidence": 0.98,
+      "trainedAt": "2026-09-01T07:17:42.188Z"
+    },
+    {
+      "phrase": "zoom out",
+      "category": "command",
+      "phonemes": "Z UW M AW T",
+      "keywords": [
+        "zoom",
+        "out"
+      ],
+      "confidence": 0.98,
+      "trainedAt": "2026-09-01T07:17:42.188Z"
+    },
+    {
+      "phrase": "activate eraser",
+      "category": "command",
+      "phonemes": "AE K T AH V EY T IH R EY S ER",
+      "keywords": [
+        "eraser"
+      ],
+      "confidence": 0.96,
+      "trainedAt": "2026-09-01T07:17:42.188Z"
+    },
+    {
+      "phrase": "hello teacher",
+      "category": "classroom",
+      "phonemes": "HH AH L OW T IY CH ER",
+      "keywords": [
+        "hello",
+        "teacher"
+      ],
+      "confidence": 0.95,
+      "trainedAt": "2026-09-01T07:17:42.188Z"
+    },
+    {
+      "phrase": "welcome to class",
+      "category": "classroom",
+      "phonemes": "W EH L K AH M T UW K L AE S",
+      "keywords": [
+        "welcome",
+        "class"
+      ],
+      "confidence": 0.95,
+      "trainedAt": "2026-09-01T07:17:42.188Z"
+    },
+    {
+      "phrase": "pythagorean theorem",
+      "category": "math",
+      "phonemes": "P AY TH AE G ER IY AH N TH IY ER AH M",
+      "keywords": [
+        "pythagorean",
+        "theorem"
+      ],
+      "confidence": 0.96,
+      "trainedAt": "2026-09-01T07:17:42.188Z"
+    },
+    {
+      "phrase": "quadratic equation",
+      "category": "math",
+      "phonemes": "K W AA D R AE T IH K IH K W EY ZH AH N",
+      "keywords": [
+        "quadratic",
+        "equation"
+      ],
+      "confidence": 0.96,
+      "trainedAt": "2026-09-01T07:17:42.188Z"
+    },
+    {
+      "phrase": "calculate derivative of x squared",
+      "category": "math_calculus",
+      "phonemes": "C A L C U L A T E   D E R I V A T I V E   O F   X   S Q U A R E D",
+      "keywords": [
+        "calculate",
+        "derivative"
+      ],
+      "confidence": 0.99,
+      "trainedAt": "2026-09-01T07:24:26.765Z"
+    },
+    {
+      "phrase": "photosynthesis process",
+      "category": "science",
+      "phonemes": "F OW T OW S IH N TH AH S IH S P R AA S EH S",
+      "keywords": [
+        "photosynthesis"
+      ],
+      "confidence": 0.96,
+      "trainedAt": "2026-09-01T07:17:42.188Z"
+    },
+    {
+      "phrase": "newton laws of motion",
+      "category": "science",
+      "phonemes": "N UW T AH N L AO Z AH V M OW SH AH N",
+      "keywords": [
+        "newton",
+        "laws",
+        "motion"
+      ],
+      "confidence": 0.96,
+      "trainedAt": "2026-09-01T07:17:42.188Z"
+    },
+    {
+      "phrase": "one",
+      "category": "number",
+      "phonemes": "W AH N",
+      "keywords": [
+        "one"
+      ],
+      "confidence": 0.99,
+      "trainedAt": "2026-09-01T07:17:42.188Z"
+    },
+    {
+      "phrase": "two",
+      "category": "number",
+      "phonemes": "T UW",
+      "keywords": [
+        "two"
+      ],
+      "confidence": 0.99,
+      "trainedAt": "2026-09-01T07:17:42.188Z"
+    },
+    {
+      "phrase": "three",
+      "category": "number",
+      "phonemes": "TH R IY",
+      "keywords": [
+        "three"
+      ],
+      "confidence": 0.99,
+      "trainedAt": "2026-09-01T07:17:42.188Z"
+    },
+    {
+      "phrase": "four",
+      "category": "number",
+      "phonemes": "F AO R",
+      "keywords": [
+        "four"
+      ],
+      "confidence": 0.99,
+      "trainedAt": "2026-09-01T07:17:42.188Z"
+    },
+    {
+      "phrase": "five",
+      "category": "number",
+      "phonemes": "F AY V",
+      "keywords": [
+        "five"
+      ],
+      "confidence": 0.99,
+      "trainedAt": "2026-09-01T07:17:42.188Z"
+    },
+    {
+      "phrase": "export as pdf",
+      "category": "command",
+      "phonemes": "EH K S P AO R T AE Z P IY D IY EH F",
+      "keywords": [
+        "export",
+        "pdf"
+      ],
+      "confidence": 0.98,
+      "trainedAt": "2026-09-01T07:17:42.188Z"
+    },
+    {
+      "phrase": "add text hello world",
+      "category": "command",
+      "phonemes": "AE D T EH K S T HH AH L OW W ER L D",
+      "keywords": [
+        "add",
+        "text",
+        "hello"
+      ],
+      "confidence": 0.97,
+      "trainedAt": "2026-09-01T07:17:42.188Z"
+    },
+    {
+      "phrase": "delete selected item",
+      "category": "command",
+      "phonemes": "D IH L IY T S AH L EH K T AH D AY T AH M",
+      "keywords": [
+        "delete",
+        "selected"
+      ],
+      "confidence": 0.98,
+      "trainedAt": "2026-09-01T07:17:42.188Z"
+    },
+    {
+      "phrase": "solve linear equation",
+      "category": "math",
+      "phonemes": "S AA L V L IH N IY ER IH K W EY ZH AH N",
+      "keywords": [
+        "solve",
+        "linear",
+        "equation"
+      ],
+      "confidence": 0.97,
+      "trainedAt": "2026-09-01T07:17:42.188Z"
+    },
+    {
+      "phrase": "explain periodic table",
+      "category": "science",
+      "phonemes": "IH K S P L EY N P IH R IY AA D IH K T EY B AH L",
+      "keywords": [
+        "explain",
+        "periodic",
+        "table"
+      ],
+      "confidence": 0.97,
+      "trainedAt": "2026-09-01T07:17:42.188Z"
+    }
+  ],
+  "totalSamplesTrained": 35
+}

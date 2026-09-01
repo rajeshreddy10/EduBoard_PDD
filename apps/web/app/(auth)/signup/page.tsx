@@ -153,38 +153,37 @@ export default function SignupPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-[var(--text-primary)]">Password</label>
-                <div className="relative">
-                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]">
-                    <Lock size={16} />
-                  </div>
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="Min. 6 chars"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="input pl-10"
-                  />
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-[var(--text-primary)]">Password</label>
+              <div className="relative">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]">
+                  <Lock size={16} />
                 </div>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Min. 6 chars"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="input pl-10"
+                />
               </div>
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-[var(--text-primary)]">Confirm</label>
-                <div className="relative">
-                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]">
-                    <Lock size={16} />
-                  </div>
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="Re-enter password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                    className="input pl-10"
-                  />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-[var(--text-primary)]">Confirm Password</label>
+              <div className="relative">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]">
+                  <Lock size={16} />
                 </div>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Re-enter password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  className="input pl-10"
+                />
               </div>
             </div>
 

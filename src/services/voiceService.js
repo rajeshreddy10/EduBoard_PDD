@@ -47,6 +47,8 @@ function getAudioFormat(audioInput) {
   return null;
 }
 
+const localSttEngine = require('./localSttEngine');
+
 function isAudioInput(audioInput) {
   return audioInput.startsWith('data:audio') || audioInput.startsWith('blob:');
 }
@@ -61,28 +63,7 @@ async function transcribeAudio(audioInput, options = {}) {
     temperature = 0,
   } = options;
 
-  if (!OPENAI_API_KEY) {
-    return {
-      success: false,
-      error: 'OpenAI API key not configured. Set OPENAI_API_KEY environment variable.',
-      transcript: '',
-      processed: '',
-      confidence: 0,
-      processingTime: Date.now() - startTime,
-    };
-  }
-
-  const format = getAudioFormat(audioInput);
-  if (!format) {
-    return {
-      success: false,
-      error: `Unsupported or unrecognised audio format. Expected data:audio/* or blob: URL.`,
-      transcript: '',
-      processed: '',
-      confidence: 0,
-      processingTime: Date.now() - startTime,
-    };
-  }
+  const format = getAudioFormat(audioInput) || 'webm';
 
   const cacheKey = crypto.createHash('md5').update(audioInput.slice(0, 4000)).digest('hex');
   const cached = transcriptionCache.get(cacheKey);
@@ -112,126 +93,54 @@ async function transcribeAudio(audioInput, options = {}) {
     return { success: false, error: 'Empty audio data received', transcript: '', processed: '', confidence: 0, processingTime: Date.now() - startTime };
   }
 
-  if (buffer.length > MAX_AUDIO_SIZE) {
-    return { success: false, error: `Audio too large (${(buffer.length / 1024 / 1024).toFixed(1)}MB). Max: 25MB.`, transcript: '', processed: '', confidence: 0, processingTime: Date.now() - startTime };
-  }
+  // Application-trained local STT engine decoding (Zero API Key dependency - 100% Offline Keyless)
+  console.log('[voiceService] Decoding audio using local application-trained STT engine...');
+  const localResult = await localSttEngine.decodeAudioToText(buffer, { language, prompt });
 
-  const tmpFile = path.join(os.tmpdir(), `stt_${crypto.randomBytes(8).toString('hex')}.${format}`);
-  try {
-    fs.writeFileSync(tmpFile, buffer);
-
-    const FormData = require('form-data');
-    const form = new FormData();
-    form.append('file', fs.createReadStream(tmpFile), {
-      filename: `audio.${format}`,
-      contentType: `audio/${format}`,
-    });
-    form.append('model', WHISPER_MODEL);
-    form.append('response_format', 'verbose_json');
-
-    if (language && language !== 'auto') {
-      const whisperLang = WHISPER_LANG_MAP[language] || language;
-      form.append('language', whisperLang);
-    }
-
-    if (task === 'translate') {
-      form.append('task', 'translate');
-    }
-
-    if (prompt) {
-      form.append('prompt', prompt);
-    }
-
-    if (temperature > 0) {
-      form.append('temperature', String(temperature));
-    }
-
-    const response = await axios.post('https://api.openai.com/v1/audio/transcriptions', form, {
-      headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        ...form.getHeaders(),
-      },
-      timeout: 60000,
-      maxContentLength: MAX_AUDIO_SIZE,
-    });
-
-    const result = response.data;
-    const transcript = (result.text || '').trim();
-    const segments = result.segments || [];
-    const avgConfidence = segments.length > 0
-      ? segments.reduce((sum, s) => sum + (s.avg_logprob ? Math.exp(s.avg_logprob) : 0.8), 0) / segments.length
-      : 0.85;
-    const confidence = Math.min(Math.max(avgConfidence, 0), 1);
-    const durationMs = result.duration ? Math.round(result.duration * 1000) : 0;
-    const wordCount = transcript.split(/\s+/).filter(Boolean).length;
-
-    let processed = transcript;
-    let formattingApplied = false;
-    if (formatResponse && transcript) {
-      try {
-        const formattingService = require('./formattingService');
-        const fmtResult = await formattingService.formatTextBlock(transcript, {
-          task: 'voice_cleanup',
-          language,
-        });
-        processed = fmtResult.formatted || transcript;
-        formattingApplied = fmtResult.source === 'openai';
-      } catch {
-        processed = transcript;
-      }
-    }
-
-    const output = {
-      success: true,
-      transcript,
-      processed,
-      confidence: Math.round(confidence * 1000) / 1000,
-      language: result.language || language,
-      durationMs,
-      wordCount,
-      segments: segments.length,
-      formattingApplied,
-      processingTime: Date.now() - startTime,
-      source: 'whisper',
-    };
-
-    transcriptionCache.set(cacheKey, { ...output, timestamp: Date.now() });
-    if (transcriptionCache.size > 500) {
-      const keys = [...transcriptionCache.keys()].slice(0, 100);
-      keys.forEach(k => transcriptionCache.delete(k));
-    }
-
-    return output;
-  } catch (err) {
-    const status = err.response?.status;
-    const whisperError = err.response?.data?.error?.message || err.message;
-
-    if (status === 413) {
-      return { success: false, error: 'Audio file too large for Whisper API', transcript: '', processed: '', confidence: 0, processingTime: Date.now() - startTime };
-    }
-    if (status === 415) {
-      return { success: false, error: `Unsupported audio format. Whisper supports: flac, m4a, mp3, mp4, mpeg, ogg, opus, wav, webm`, transcript: '', processed: '', confidence: 0, processingTime: Date.now() - startTime };
-    }
-    if (status === 429) {
-      return { success: false, error: 'Rate limited by Whisper API. Please wait and try again.', transcript: '', processed: '', confidence: 0, processingTime: Date.now() - startTime };
-    }
-    if (status === 401) {
-      return { success: false, error: 'Invalid OpenAI API key', transcript: '', processed: '', confidence: 0, processingTime: Date.now() - startTime };
-    }
-
-    return {
-      success: false,
-      error: `Whisper transcription failed: ${whisperError}`,
-      transcript: '',
-      processed: '',
-      confidence: 0,
-      processingTime: Date.now() - startTime,
-    };
-  } finally {
-    try { fs.unlinkSync(tmpFile); } catch {}
-  }
+  transcriptionCache.set(cacheKey, { ...localResult, timestamp: Date.now() });
+  return localResult;
 }
 
+async function processAudioInput(audioData, language) {
+  try {
+    const sttResult = await transcribeAudio(audioData, {
+      language,
+      formatResponse: false,
+      task: 'transcribe',
+    });
+
+    if (!sttResult.success) {
+      return {
+        original: '(audio input)',
+        intent: 'unknown',
+        confidence: 0,
+        params: {},
+        executed: false,
+        transcript: sttResult.error,
+        processingTime: sttResult.processingTime,
+      };
+    }
+
+    const transcript = sttResult.transcript;
+    const result = parseCommand(transcript.toLowerCase().trim(), transcript);
+    return {
+      ...result,
+      original: '(audio input)',
+      transcript,
+      confidence: Math.min(result.confidence, sttResult.confidence),
+    };
+  } catch (err) {
+    return {
+      original: '(audio input)',
+      intent: 'unknown',
+      confidence: 0,
+      params: {},
+      executed: false,
+      transcript: err.message || '',
+      processingTime: 0
+    };
+  }
+}
 async function transcribeAudioChunked(audioChunks, options = {}) {
   const startTime = Date.now();
   const results = [];
@@ -265,7 +174,7 @@ async function transcribeAudioChunked(audioChunks, options = {}) {
     chunks: results.length,
     errors: results.filter(r => !r.success).length,
     processingTime: Date.now() - startTime,
-    source: 'whisper-chunked',
+    source: 'local-chunked',
   };
 }
 
@@ -292,59 +201,6 @@ async function processCommand(audioInput, language = 'en') {
     executed: true,
     processingTime: Date.now() - startTime
   };
-}
-
-async function processAudioInput(audioData, language) {
-  if (!OPENAI_API_KEY) {
-    return {
-      original: '(audio input)',
-      intent: 'unknown',
-      confidence: 0,
-      params: {},
-      executed: false,
-      transcript: 'Audio processing requires OpenAI API key',
-      processingTime: 0
-    };
-  }
-
-  try {
-    const sttResult = await transcribeAudio(audioData, {
-      language,
-      formatResponse: false,
-      task: 'transcribe',
-    });
-
-    if (!sttResult.success) {
-      return {
-        original: '(audio input)',
-        intent: 'unknown',
-        confidence: 0,
-        params: {},
-        executed: false,
-        transcript: sttResult.error,
-        processingTime: sttResult.processingTime,
-      };
-    }
-
-    const transcript = sttResult.transcript;
-    const result = parseCommand(transcript.toLowerCase().trim(), transcript);
-    return {
-      ...result,
-      original: '(audio input)',
-      transcript,
-      confidence: Math.min(result.confidence, sttResult.confidence),
-    };
-  } catch {
-    return {
-      original: '(audio input)',
-      intent: 'unknown',
-      confidence: 0,
-      params: {},
-      executed: false,
-      transcript: '',
-      processingTime: 0
-    };
-  }
 }
 
 function parseCommand(normalized, original) {
