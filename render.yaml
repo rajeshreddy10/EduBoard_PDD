@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: eduboard-api
+    env: node
+    buildCommand: npm run install:all
+    startCommand: npm run start:api
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: ALLOWED_ORIGINS
+        value: https://*.vercel.app,https://rajeshreddy10.github.io,http://localhost:3000
