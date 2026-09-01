@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Mail, ArrowLeft, Send, CheckCircle } from 'lucide-react';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { GlassButton } from '@/components/ui/GlassButton';
@@ -10,6 +11,7 @@ import { GradientText } from '@/components/ui/GradientText';
 import { useAuth } from '@/lib/AuthContext';
 
 export default function ForgotPasswordPage() {
+  const router = useRouter();
   const { resetPassword } = useAuth();
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
@@ -41,7 +43,7 @@ export default function ForgotPasswordPage() {
             </div>
             <h2 className="text-xl font-bold"><GradientText>Check Your Email</GradientText></h2>
             <p className="text-white/40 mt-2 mb-6">We sent a password reset link to <span className="text-white/70">{email}</span></p>
-            <GlassButton variant="gradient" fullWidth size="lg" onClick={() => window.location.href = '/reset-password'}>
+            <GlassButton variant="gradient" fullWidth size="lg" onClick={() => router.push('/reset-password')}>
               Open Email App
             </GlassButton>
             <button onClick={() => setSent(false)} className="mt-3 text-sm text-indigo-400 hover:text-indigo-300">

@@ -7,7 +7,6 @@ const basePath = isGithubActions && repoName ? `/${repoName}` : (process.env.NEX
 const nextConfig: NextConfig = {
   output: 'export',
   basePath: basePath,
-  assetPrefix: basePath ? `${basePath}/` : undefined,
   trailingSlash: true,
   images: {
     unoptimized: true,
